@@ -1,4 +1,4 @@
 ipaddress
-simplenc
+netifaces
 socket
 zeroconf
