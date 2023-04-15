@@ -4,6 +4,7 @@ import ipaddress
 import netifaces
 from zeroconf import ServiceBrowser, ServiceInfo, ServiceListener, Zeroconf
 import socket
+import uuid
 
 
 class AdarListener(ServiceListener):
@@ -33,8 +34,10 @@ def get_local_non_loopback_ipv4_addresses():
 def zeroconf():
     zeroconf = Zeroconf()
     service_type = "_adar._tcp.local."
+    id = uuid.getnode()
     properties = {
         "Description": "Network coding for automated distributed storage systems",
+        "uuid": id
     }
     port = 6780
     fqdn = socket.getfqdn()
@@ -42,7 +45,7 @@ def zeroconf():
     ipv4 = list(get_local_non_loopback_ipv4_addresses())
     # https://stackoverflow.com/questions/52081008/get-most-recent-global-ipv6-address-of-interface
     ipv6 = socket.getaddrinfo(hostname, None, socket.AF_INET6)[1][4][0]
-    print(f"{hostname}: {fqdn} ({ipv4}, {ipv6})")
+    print(f"{hostname} ({id}): {fqdn} ({ipv4}, {ipv6})")
     adar_info = ServiceInfo(
         service_type,
         name=f"{hostname}.{service_type}",
