@@ -23,21 +23,21 @@ To build/run the project:
 ~/python/simplenc $ pip install .
 ```
 
-1. Install requirements
+2. Install requirements
 
 ```sh
 ~ $ cd python
 ~/python $ pip install -r requirements.txt
 ```
 
-1. Run the program
+3. Run the program
 
 ```sh
 ~ $ cd python
 ~/python $ python main.py
 ```
 
-1. Test with the client
+4. Test with the client
 
 ```sh
 ~ $ cd python
