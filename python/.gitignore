@@ -1,3 +1,4 @@
 .github
 build
 simplenc.egg-info
+__pycache__
