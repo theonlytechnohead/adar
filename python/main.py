@@ -1,7 +1,9 @@
 
 import simplenc
+import socketserver
 import ipaddress
 import netifaces
+import threading
 from zeroconf import ServiceBrowser, ServiceInfo, ServiceListener, Zeroconf
 import socket
 import uuid
@@ -19,8 +21,9 @@ class AdarListener(ServiceListener):
         info = zc.get_service_info(type_, name)
         print(f"Service added: {name}")
 
-# https://stackoverflow.com/questions/39988525/find-local-non-loopback-ip-address-in-python
+
 def get_local_non_loopback_ipv4_addresses():
+    # https://stackoverflow.com/questions/39988525/find-local-non-loopback-ip-address-in-python
     for interface in netifaces.interfaces():
         # Not all interfaces have an IPv4 address:
         if netifaces.AF_INET in netifaces.ifaddresses(interface):
@@ -31,7 +34,7 @@ def get_local_non_loopback_ipv4_addresses():
                     yield address_info["addr"]
 
 
-def zeroconf():
+def zeroconf() -> Zeroconf:
     zeroconf = Zeroconf()
     service_type = "_adar._tcp.local."
     id = uuid.getnode()
@@ -56,11 +59,35 @@ def zeroconf():
     zeroconf.register_service(adar_info, 60)
     listener = AdarListener()
     browser = ServiceBrowser(zeroconf, service_type, listener)
-    try:
-        input("Press enter to exit...\n\n")
-    finally:
-        zeroconf.close()
+    return zeroconf
+
+
+class AdarHandler(socketserver.StreamRequestHandler):
+    def handle(self) -> None:
+        self.data = self.rfile.readline().strip()
+        print(f"{self.client_address[0]} wrote: {str(self.data, 'utf-8')}")
+        self.wfile.write(self.data.upper())
+
+
+class dual_stack(socketserver.TCPServer):
+    def server_bind(self) -> None:
+        self.socket = socket.create_server(
+            self.server_address, family=socket.AF_INET6, dualstack_ipv6=True)
+
+
+def server() -> socketserver.TCPServer:
+    address = ("::", 6780)
+    server = dual_stack(address, AdarHandler)
+    return server
 
 
 if __name__ == "__main__":
-    zeroconf()
+    service = zeroconf()
+    adar = server()
+    thread = threading.Thread(target=adar.serve_forever, daemon=True)
+    thread.start()
+    try:
+        input("Press enter to exit...\n\n")
+    finally:
+        service.close()
+        adar.shutdown()
