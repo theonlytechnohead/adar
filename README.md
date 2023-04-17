@@ -20,7 +20,7 @@ To build/run the project:
 ```sh
 ~ $ cd python
 ~/python $ cd simplenc
-~/python $ pip install .
+~/python/simplenc $ pip install .
 ```
 
 1. Install requirements
