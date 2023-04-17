@@ -1,7 +1,9 @@
 import socket
 import sys
-from zeroconf import ServiceBrowser, ServiceInfo, ServiceListener, Zeroconf, IPVersion
+
 from main import SERVICE
+from zeroconf import (IPVersion, ServiceBrowser, ServiceInfo, ServiceListener,
+                      Zeroconf)
 
 V4 = 0
 V6 = 1
@@ -39,6 +41,6 @@ listener = AdarListener()
 browser = ServiceBrowser(zeroconf, SERVICE, listener)
 
 try:
-	input("Press enter to exit...\n\n")
+    input("Press enter to exit...\n\n")
 finally:
-	zeroconf.close()
+    zeroconf.close()

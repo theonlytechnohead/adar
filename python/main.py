@@ -1,11 +1,12 @@
-import simplenc
-import socketserver
 import ipaddress
-import netifaces
-import threading
-from zeroconf import ServiceBrowser, ServiceInfo, ServiceListener, Zeroconf
 import socket
+import socketserver
+import threading
 import uuid
+
+import netifaces
+import simplenc
+from zeroconf import ServiceBrowser, ServiceInfo, ServiceListener, Zeroconf
 
 ID = uuid.getnode()
 PORT = 6780
@@ -53,9 +54,8 @@ def zeroconf() -> Zeroconf:
         properties=properties,
         server=fqdn,
         addresses=[*ipv4, ipv6])
-    zeroconf.register_service(adar_info, 60)
-    listener = AdarListener()
-    browser = ServiceBrowser(zeroconf, SERVICE, listener)
+    zeroconf.register_service(adar_info)
+    ServiceBrowser(zeroconf, SERVICE, AdarListener())
     return zeroconf
 
 
