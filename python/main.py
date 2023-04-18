@@ -1,22 +1,28 @@
 import ipaddress
+import signal
 import socket
 import socketserver
 import threading
 import uuid
+from time import sleep
 
 import netifaces
-import simplenc
 from zeroconf import ServiceBrowser, ServiceInfo, ServiceListener, Zeroconf
 
 ID = uuid.getnode()
 PORT = 6780
 SERVICE = "_adar._tcp.local."
 
+exit = False
+
 
 class AdarListener(ServiceListener):
     def add_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         info = zc.get_service_info(type_, name)
-        print(f"Service added: {name}")
+        friendlyname = name.removesuffix(f".{SERVICE}")
+        print(f"Service added: {friendlyname}")
+        if int(info.properties[b"uuid"]) != ID:
+            pair(friendlyname, info)
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         pass
@@ -63,6 +69,8 @@ class AdarHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
         self.data = self.rfile.readline().strip()
         print(f"{self.client_address[0]}: {str(self.data, 'utf-8')}")
+        if self.data == "pair?":
+            self.data = "sure"
         self.wfile.write(self.data.upper())
 
 
@@ -72,13 +80,47 @@ class dual_stack(socketserver.TCPServer):
             self.server_address, family=socket.AF_INET6, dualstack_ipv6=True)
 
 
+def parse_service(info: ServiceInfo) -> tuple[str, socket.AddressFamily]:
+    v6 = info.parsed_addresses(socket.AF_INET6)
+    if len(v6):
+        return v6[0], socket.AF_INET6
+    return info.parsed_addresses(socket.AF_INET), socket.AF_INET
+
+
+def request_pair(info: ServiceInfo) -> bool:
+    accepted = False
+    address, mode = parse_service(info)
+    with socket.socket(mode, socket.SOCK_STREAM) as sock:
+        sock.connect((address, PORT))
+        sock.sendall(bytes("pair?" + "\n", "utf-8"))
+        received = str(sock.recv(1024), "utf-8")
+        accepted = True if received == "sure" else False
+    return accepted
+
+
+def pair(name: str, info: ServiceInfo):
+    confirm = input(f"Do you want to pair with {name}? [Y/n] ")
+    if confirm.lower() == "y" or confirm == "":
+        if request_pair(info):
+            print("Pairing accepted")
+        else:
+            print("Pairing failed")
+
+
+def handle(signum, frame):
+    global exit
+    print("Exiting...")
+    service.close()
+    adar.shutdown()
+    exit = True
+
+
 if __name__ == "__main__":
+    signal.signal(signal.SIGINT, handle)
+    signal.signal(signal.SIGTERM, handle)
     service = zeroconf()
     adar = dual_stack(("::", PORT), AdarHandler)
-    server = threading.Thread(target=adar.serve_forever, daemon=True)
+    server = threading.Thread(target=adar.serve_forever)
     server.start()
-    try:
-        input("Press enter to exit...\n\n")
-    finally:
-        service.close()
-        adar.shutdown()
+    while not exit:
+        sleep(1)
