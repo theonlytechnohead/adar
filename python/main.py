@@ -68,11 +68,14 @@ def zeroconf() -> Zeroconf:
 
 class AdarHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
-        self.data = self.rfile.readline().strip()
-        print(f"{self.client_address[0]}: {str(self.data, 'utf-8')}")
+        self.data = str(self.rfile.readline().strip(), "utf-8")
         if self.data == "pair?":
-            self.data = "sure"
-        self.wfile.write(self.data.upper())
+            print("Pairing requested")
+            self.data = b"sure"
+        else:
+            print(f"{self.client_address[0]}: {self.data}")
+            self.data = bytes(self.data.upper(), "utf-8")
+        self.wfile.write(self.data)
 
 
 class dual_stack(socketserver.TCPServer):
