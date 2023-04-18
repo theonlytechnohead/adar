@@ -7,7 +7,8 @@ import uuid
 from time import sleep
 
 import netifaces
-from zeroconf import ServiceBrowser, ServiceInfo, ServiceListener, Zeroconf
+from zeroconf import (IPVersion, ServiceBrowser, ServiceInfo, ServiceListener,
+                      Zeroconf)
 
 ID = uuid.getnode()
 PORT = 6780
@@ -81,10 +82,10 @@ class dual_stack(socketserver.TCPServer):
 
 
 def parse_service(info: ServiceInfo) -> tuple[str, socket.AddressFamily]:
-    v6 = info.parsed_addresses(socket.AF_INET6)
-    if len(v6):
+    v6 = info.parsed_addresses(IPVersion.V6Only)
+    if 0 < len(v6):
         return v6[0], socket.AF_INET6
-    return info.parsed_addresses(socket.AF_INET), socket.AF_INET
+    return info.parsed_addresses(IPVersion.V4Only)[0], socket.AF_INET
 
 
 def request_pair(info: ServiceInfo) -> bool:
