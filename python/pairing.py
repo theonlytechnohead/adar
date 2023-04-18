@@ -2,7 +2,7 @@ import os
 import socket
 from zeroconf import ServiceInfo, IPVersion
 
-from main import PORT
+from constants import PORT
 
 
 def check_service(info: ServiceInfo) -> tuple[str, socket.AddressFamily]:

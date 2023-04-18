@@ -3,7 +3,7 @@ import netifaces
 import socket
 from zeroconf import Zeroconf, ServiceListener, ServiceInfo, ServiceBrowser
 
-from main import SERVICE, ID, PORT
+from constants import *
 from pairing import *
 
 

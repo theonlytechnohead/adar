@@ -2,14 +2,10 @@ import signal
 import socket
 import socketserver
 import threading
-import uuid
 from time import sleep
 
 from advertise import *
-
-ID = uuid.getnode()
-PORT = 6780
-SERVICE = "_adar._tcp.local."
+from constants import *
 
 stop = False
 
