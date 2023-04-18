@@ -1,4 +1,5 @@
 import ipaddress
+import os
 import signal
 import socket
 import socketserver
@@ -70,7 +71,6 @@ class AdarHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
         self.data = str(self.rfile.readline().strip(), "utf-8")
         if self.data == "pair?":
-            print("Pairing requested")
             self.data = b"sure"
         else:
             print(f"{self.client_address[0]}: {self.data}")
@@ -91,6 +91,16 @@ def parse_service(info: ServiceInfo) -> tuple[str, socket.AddressFamily]:
     return info.parsed_addresses(IPVersion.V4Only)[0], socket.AF_INET
 
 
+def check_pair(info: ServiceInfo) -> bool:
+    if os.path.exists("pairings"):
+        id = str(info.properties[b"uuid"], "utf-8")
+        with open("pairings") as file:
+            for line in file.readlines():
+                if id in line:
+                    return True
+    return False
+
+
 def request_pair(info: ServiceInfo) -> bool:
     accepted = False
     address, mode = parse_service(info)
@@ -102,11 +112,20 @@ def request_pair(info: ServiceInfo) -> bool:
     return accepted
 
 
+def store_pair(info: ServiceInfo):
+    with open("pairings", "a") as file:
+        id = str(info.properties[b"uuid"], "utf-8")
+        file.write(f"{id}\n")
+
+
 def pair(name: str, info: ServiceInfo):
+    if check_pair(info):
+        return
     confirm = input(f"Do you want to pair with {name}? [Y/n] ")
     if confirm.lower() == "y" or confirm == "":
         if request_pair(info):
             print("Pairing accepted")
+            store_pair(info)
         else:
             print("Pairing failed")
 
