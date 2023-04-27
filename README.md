@@ -20,7 +20,7 @@ To build/run the project:
 ```sh
 ~ $ cd python
 ~/python $ cd simplenc
-~/python/simplenc $ pip install .
+~/python/simple_nc-main $ pip install .
 ```
 
 2. Install requirements
@@ -29,6 +29,8 @@ To build/run the project:
 ~ $ cd python
 ~/python $ pip install -r requirements.txt
 ```
+
+Enable `Windows Projected File System` in `Turn Windows features on or off`
 
 3. Run the program
 
