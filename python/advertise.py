@@ -5,6 +5,7 @@ from zeroconf import Zeroconf, ServiceListener, ServiceInfo, ServiceBrowser
 
 from constants import *
 from pairing import *
+from peers import *
 
 
 class AdarListener(ServiceListener):
@@ -18,12 +19,18 @@ class AdarListener(ServiceListener):
             else:
                 print()
                 pair(friendlyname, info)
+            address, connection = connect()
+            peers[address] = connection
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         pass
 
     def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
-        pass
+        info = zc.get_service_info(type_, name)
+        uuid = int(info.properties[b"uuid"])
+        if uuid != ID:
+            peers[uuid].close()
+            del peers[uuid]
 
 
 def get_local_non_loopback_ipv4_addresses():

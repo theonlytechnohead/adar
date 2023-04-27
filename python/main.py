@@ -9,7 +9,6 @@ from constants import *
 
 stop = False
 
-
 class AdarHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
         self.data = str(self.rfile.readline().strip(), "utf-8")
@@ -42,6 +41,7 @@ if __name__ == "__main__":
     adar = dual_stack(("::", PORT), AdarHandler)
     server = threading.Thread(target=adar.serve_forever)
     server.start()
+    # TODO: add FUSE & callbacks w/ `peers`
     while not stop:
         sleep(1)
     print(" done")

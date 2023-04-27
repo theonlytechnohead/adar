@@ -51,3 +51,11 @@ def pair(name: str, info: ServiceInfo):
             store_pair(info)
         else:
             print("Pairing failed")
+
+
+def connect(info: ServiceInfo) -> tuple[str, socket.socket]:
+    address, mode = check_service(info)
+    connection = socket.socket(mode, socket.SOCK_STREAM)
+    connection.connect((address, PORT))
+    return info.properties[b"uuid"], connection
+

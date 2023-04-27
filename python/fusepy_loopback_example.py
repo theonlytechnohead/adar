@@ -21,7 +21,7 @@ class Loopback(LoggingMixIn, Operations):
     def __call__(self, op, path, *args):
         return super(Loopback, self).__call__(op, self.root + path, *args)
     
-    def __del__(self):
+    def destroy(self, path):
         os.rmdir(MOUNTPOINT)
 
     def access(self, path, mode):
