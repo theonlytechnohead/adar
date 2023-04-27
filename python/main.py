@@ -31,6 +31,7 @@ def handle(signum, frame):
     print("Stopping...", end="")
     service.close()
     adar.shutdown()
+    storage_fuse.destroy()
     stop = True
 
 
@@ -41,7 +42,14 @@ if __name__ == "__main__":
     adar = dual_stack(("::", PORT), AdarHandler)
     server = threading.Thread(target=adar.serve_forever)
     server.start()
-    # TODO: add FUSE & callbacks w/ `peers`
+    if os.name == "posix":
+        # TODO: hookup callbacks w/ `peers`
+        import storage_fuse
+        storage = threading.Thread(target=storage_fuse.create)
+        storage.start()
+    if os.name == "nt":
+        # TODO: use the Windows Projected File System via PyProjFS
+        pass
     while not stop:
         sleep(1)
     print(" done")
