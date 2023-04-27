@@ -1,3 +1,4 @@
+fusepy
 ipaddress
 netifaces
 socket
