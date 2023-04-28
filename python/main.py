@@ -28,7 +28,7 @@ class dual_stack(socketserver.TCPServer):
 
 def handle(signum, frame):
     global stop
-    print("Stopping...", end="")
+    print("\rStopping...", end="")
     service.close()
     adar.shutdown()
     if os.name == "posix":
@@ -57,4 +57,4 @@ if __name__ == "__main__":
         storage.start()
     while not stop:
         sleep(1)
-    print(" done")
+    print("\tdone")
