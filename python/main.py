@@ -31,7 +31,10 @@ def handle(signum, frame):
     print("Stopping...", end="")
     service.close()
     adar.shutdown()
-    storage_fuse.destroy()
+    if os.name == "posix":
+        storage_fuse.destroy()
+    if os.name == "nt":
+        storage_projected.destroy()
     stop = True
 
 
@@ -49,7 +52,9 @@ if __name__ == "__main__":
         storage.start()
     if os.name == "nt":
         # TODO: use the Windows Projected File System via PyProjFS
-        pass
+        import storage_projected
+        storage = threading.Thread(target=storage_projected.create)
+        storage.start()
     while not stop:
         sleep(1)
     print(" done")

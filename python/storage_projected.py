@@ -5,7 +5,9 @@ import sys
 
 import ProjectedFS
 
-DEBUG = True
+from peers import *
+
+DEBUG = False
 
 ROOT_POINT = ".root"
 MOUNT_POINT = "mount"
@@ -20,8 +22,8 @@ E_INVALIDARG = 0x80070057
 ERROR_FILE_NOT_FOUND = 0x80070002
 ERROR_INVALID_PARAMETER = 0x80070057
 
+instanceHandle = None
 sessions = dict()
-
 
 @ProjectedFS.PRJ_START_DIRECTORY_ENUMERATION_CB
 def start_directory_enumeration(callbackData, enumerationId):
@@ -173,38 +175,36 @@ instanceId.Data2 = 0xBAAD
 instanceId.Data3 = 0xCAA7
 
 if not os.path.exists(ROOT_POINT):
-    print(f"{ROOT_POINT} does not exist yet, creating...")
+    if DEBUG: print(f"{ROOT_POINT} does not exist yet, creating...")
     os.mkdir(ROOT_POINT)
 
 if not os.path.isdir(ROOT_POINT):
-    print(f"{ROOT_POINT} is not a directory, exiting...")
+    if DEBUG: print(f"{ROOT_POINT} is not a directory, exiting...")
     sys.exit(1)
 
 if not os.path.exists(MOUNT_POINT):
-    print(f"{MOUNT_POINT} does not exist yet, creating...")
+    if DEBUG: print(f"{MOUNT_POINT} does not exist yet, creating...")
     os.mkdir(MOUNT_POINT)
 
 if not os.path.isdir(MOUNT_POINT):
-    print(f"{MOUNT_POINT} is not a directory, exiting...")
+    if DEBUG: print(f"{MOUNT_POINT} is not a directory, exiting...")
     sys.exit(1)
 
 if ProjectedFS.PrjMarkDirectoryAsPlaceholder(MOUNT_POINT, None, None, instanceId) != S_OK:
-    print(f"Error marking {MOUNT_POINT} directory as placeholder, exiting...")
-    sys.exit(1)
-
-print("Starting virtualization instance")
-
-# Start Provider
-instanceHandle = ProjectedFS.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT()
-if ProjectedFS.PrjStartVirtualizing(MOUNT_POINT, callbackTable, None, None, instanceHandle) != S_OK:
-    print("Error starting virtualization, exiting...")
+    if DEBUG: print(f"Error marking {MOUNT_POINT} directory as placeholder, exiting...")
     sys.exit(1)
 
 
-input("Press any key to exit...\n")
+def create():
+    if DEBUG: print("Starting virtualization instance")
+    global instanceHandle
+    instanceHandle = ProjectedFS.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT()
+    if ProjectedFS.PrjStartVirtualizing(MOUNT_POINT, callbackTable, None, startOptions, instanceHandle) != S_OK:
+        if DEBUG: print("Error starting virtualization, exiting...")
+        sys.exit(1)
 
-# Stop Provider. MSDN says it returns an HRESULT, but the func prototype is void.
-ProjectedFS.PrjStopVirtualizing(instanceHandle)
-print("Stopped virtualization instance")
 
-shutil.rmtree(MOUNT_POINT)
+def destroy():
+    ProjectedFS.PrjStopVirtualizing(instanceHandle)
+    if DEBUG: print("Stopped virtualization instance")
+    shutil.rmtree(MOUNT_POINT)
