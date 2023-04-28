@@ -1,12 +1,15 @@
+import ctypes
 import os
 import shutil
 import sys
-import ctypes
+
 import ProjectedFS
 
-ROOT_POINT = "./.root"
-MOUNT_POINT = "./mount"
 DEBUG = True
+
+ROOT_POINT = ".root"
+MOUNT_POINT = "mount"
+FILE_ATTRIBUTE_HIDDEN = 0x02
 
 # HRESULT
 S_OK = 0x00000000
@@ -17,45 +20,58 @@ E_INVALIDARG = 0x80070057
 ERROR_FILE_NOT_FOUND = 0x80070002
 ERROR_INVALID_PARAMETER = 0x80070057
 
-# file metadata
-fileBasicInfo = ProjectedFS.PRJ_FILE_BASIC_INFO()
-fileBasicInfo.IsDirectory = False
-fileBasicInfo.FileSize = 0x1000
-
 sessions = dict()
-virt_file = "testing.txt"
 
 
 @ProjectedFS.PRJ_START_DIRECTORY_ENUMERATION_CB
 def start_directory_enumeration(callbackData, enumerationId):
-    # if DEBUG:
-    # print(f"Starting directory enumeration: {enumerationId.contents}")
     sessions[enumerationId.contents] = dict()
     return S_OK
 
 
 @ProjectedFS.PRJ_END_DIRECTORY_ENUMERATION_CB
 def end_directory_enumeration(callbackData, enumerationId):
-    # if DEBUG:
-    # print(f"Stopping directory enumeration: {enumerationId.contents}")
     try:
         del sessions[enumerationId.contents]
         return S_OK
     except:
         pass
 
-# just fill out a dummy entry for virt_file
+
+def get_fileinfo(path) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
+    fileInfo = ProjectedFS.PRJ_FILE_BASIC_INFO()
+    if os.path.isfile(path):
+        stats = os.stat(path)
+        fileInfo.FileSize = stats.st_size
+        # TODO: this stuff
+        # fileInfo.CreationTime = None
+        # fileInfo.LastAccessTime = None
+        # fileInfo.LastWriteTime = None
+        # fileInfo.ChangeTime = None
+        # fileInfo.FileAttributes = None
+    else:
+        fileInfo.IsDirectory = True
+    return fileInfo
 
 
 @ProjectedFS.PRJ_GET_DIRECTORY_ENUMERATION_CB
 def get_directory_enumeration(callbackData, enumerationId, searchExpression, dirEntryBufferHandle):
-    if DEBUG:
-        print(f"Getting directory enumeration: /{searchExpression}")
     try:
-        if (("COMPLETED" not in sessions[enumerationId.contents]) or (callbackData.Flags & ProjectedFS.PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN)):
-            if ProjectedFS.PrjFileNameMatch(virt_file, searchExpression):
-                ProjectedFS.PrjFillDirEntryBuffer(
-                    virt_file, fileBasicInfo, dirEntryBufferHandle)
+        if (("COMPLETED" not in sessions[enumerationId.contents]) or (callbackData.contents.Flags & ProjectedFS.PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN)):
+            # TODO: searchExpression + wildcard support
+            path = os.path.join(ROOT_POINT, callbackData.contents.FilePathName)
+            if DEBUG:
+                print(f"Getting directory enumeration: {callbackData.contents.FilePathName}")
+            if os.path.exists(path):
+                if os.path.isdir(path):
+                    entries = [entry for entry in os.listdir(path)]
+                else:
+                    entries = [entry]
+                for entry in entries:
+                    full_path = os.path.join(path, entry)
+                    fileInfo = get_fileinfo(full_path)
+                    # TODO: PrjFileNameCompare to determine correct sort order
+                    ProjectedFS.PrjFillDirEntryBuffer(entry, fileInfo, dirEntryBufferHandle)
                 sessions[enumerationId.contents]["COMPLETED"] = True
             else:
                 return ERROR_FILE_NOT_FOUND
@@ -67,13 +83,14 @@ def get_directory_enumeration(callbackData, enumerationId, searchExpression, dir
 @ProjectedFS.PRJ_GET_PLACEHOLDER_INFO_CB
 def get_placeholder_info(callbackData):
     if DEBUG:
-        print(
-            f"Fetching placeholder info: {callbackData.contents.FilePathName}")
-    if ProjectedFS.PrjFileNameMatch(virt_file, callbackData.contents.FilePathName):
-        PlaceholderInfo = ProjectedFS.PRJ_PLACEHOLDER_INFO()
-        PlaceholderInfo.FileBasicInfo = fileBasicInfo
-        ProjectedFS.PrjWritePlaceholderInfo(
-            callbackData.contents.NamespaceVirtualizationContext, virt_file, PlaceholderInfo, ctypes.sizeof(PlaceholderInfo))
+        print(f"Fetching placeholder info: {callbackData.contents.FilePathName}")
+    path = callbackData.contents.FilePathName
+    full_path = os.path.join(ROOT_POINT, path)
+    if os.path.exists(full_path):
+        placeholderInfo = ProjectedFS.PRJ_PLACEHOLDER_INFO()
+        placeholderInfo.FileBasicInfo = get_fileinfo(full_path)
+        # TODO: size vs size on disk?
+        ProjectedFS.PrjWritePlaceholderInfo(callbackData.contents.NamespaceVirtualizationContext, path, placeholderInfo, ctypes.sizeof(placeholderInfo))
         return S_OK
     else:
         return ERROR_FILE_NOT_FOUND
@@ -82,20 +99,25 @@ def get_placeholder_info(callbackData):
 @ProjectedFS.PRJ_GET_FILE_DATA_CB
 def get_file_data(callbackData, byteOffset, length):
     if DEBUG:
-        print(f"Getting file data: {callbackData.contents.FilePathName}")
-    if length > fileBasicInfo.FileSize:
-        return E_INVALIDARG
-
-    writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(
-        callbackData.contents.NamespaceVirtualizationContext, length)
-    if not writeBuffer:
-        return E_OUTOFMEMORY
-
-    ctypes.memmove(ctypes.c_void_p(writeBuffer), "A" * length, length)
-    ProjectedFS.PrjWriteFileData(callbackData.contents.NamespaceVirtualizationContext,
-                                 callbackData.contents.DataStreamId, writeBuffer, byteOffset, length)
-    ProjectedFS.PrjFreeAlignedBuffer(writeBuffer)
-    return S_OK
+        print(f"Getting file data: {callbackData.contents.FilePathName} (+{byteOffset} for {length})")
+    path = callbackData.contents.FilePathName
+    full_path = os.path.join(ROOT_POINT, path)
+    if os.path.exists(full_path):
+        fileInfo = get_fileinfo(full_path)
+        if length > fileInfo.FileSize:
+            return E_INVALIDARG
+        with open(full_path, "rb") as file:
+            file.seek(byteOffset)
+            contents = file.read(length)
+        writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(callbackData.contents.NamespaceVirtualizationContext, length)
+        if not writeBuffer:
+            return E_OUTOFMEMORY
+        ctypes.memmove(ctypes.c_void_p(writeBuffer), contents, length)
+        ProjectedFS.PrjWriteFileData(callbackData.contents.NamespaceVirtualizationContext, callbackData.contents.DataStreamId, writeBuffer, byteOffset, length)
+        ProjectedFS.PrjFreeAlignedBuffer(writeBuffer)
+        return S_OK
+    else:
+        return ERROR_FILE_NOT_FOUND
 
 
 notification_table = {
@@ -120,7 +142,7 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
         return S_OK
     message = notification_table[notification]
     if DEBUG:
-        print(f"Notified: {message}")
+        print(f"Notified: {message} @ {callbackData.contents.FilePathName}")
     return S_OK
 
 
@@ -149,6 +171,14 @@ instanceId = ProjectedFS.GUID()
 instanceId.Data1 = 0xD137C01A
 instanceId.Data2 = 0xBAAD
 instanceId.Data3 = 0xCAA7
+
+if not os.path.exists(ROOT_POINT):
+    print(f"{ROOT_POINT} does not exist yet, creating...")
+    os.mkdir(ROOT_POINT)
+
+if not os.path.isdir(ROOT_POINT):
+    print(f"{ROOT_POINT} is not a directory, exiting...")
+    sys.exit(1)
 
 if not os.path.exists(MOUNT_POINT):
     print(f"{MOUNT_POINT} does not exist yet, creating...")
