@@ -3,8 +3,9 @@ import os
 import shutil
 import sys
 
-import ProjectedFS
 
+import filetimes
+import ProjectedFS
 from peers import *
 
 DEBUG = False
@@ -24,6 +25,7 @@ ERROR_INVALID_PARAMETER = 0x80070057
 
 instanceHandle = None
 sessions = dict()
+
 
 @ProjectedFS.PRJ_START_DIRECTORY_ENUMERATION_CB
 def start_directory_enumeration(callbackData, enumerationId):
@@ -45,12 +47,11 @@ def get_fileinfo(path) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
     if os.path.isfile(path):
         stats = os.stat(path)
         fileInfo.FileSize = stats.st_size
-        # TODO: this stuff
-        # fileInfo.CreationTime = None
-        # fileInfo.LastAccessTime = None
-        # fileInfo.LastWriteTime = None
-        # fileInfo.ChangeTime = None
-        # fileInfo.FileAttributes = None
+        fileInfo.CreationTime = filetimes.timestamp_to_filetime(stats.st_ctime)
+        fileInfo.LastAccessTime = filetimes.timestamp_to_filetime(stats.st_atime)
+        fileInfo.LastWriteTime = filetimes.timestamp_to_filetime(stats.st_mtime)
+        fileInfo.ChangeTime = filetimes.timestamp_to_filetime(stats.st_mtime)
+        fileInfo.FileAttributes = stats.st_file_attributes
     else:
         fileInfo.IsDirectory = True
     return fileInfo
@@ -63,7 +64,8 @@ def get_directory_enumeration(callbackData, enumerationId, searchExpression, dir
             # TODO: searchExpression + wildcard support
             path = os.path.join(ROOT_POINT, callbackData.contents.FilePathName)
             if DEBUG:
-                print(f"Getting directory enumeration: {callbackData.contents.FilePathName}")
+                print(
+                    f"Getting directory enumeration: {callbackData.contents.FilePathName}")
             if os.path.exists(path):
                 if os.path.isdir(path):
                     entries = [entry for entry in os.listdir(path)]
@@ -73,26 +75,30 @@ def get_directory_enumeration(callbackData, enumerationId, searchExpression, dir
                     full_path = os.path.join(path, entry)
                     fileInfo = get_fileinfo(full_path)
                     # TODO: PrjFileNameCompare to determine correct sort order
-                    ProjectedFS.PrjFillDirEntryBuffer(entry, fileInfo, dirEntryBufferHandle)
+                    ProjectedFS.PrjFillDirEntryBuffer(
+                        entry, fileInfo, dirEntryBufferHandle)
                 sessions[enumerationId.contents]["COMPLETED"] = True
             else:
                 return ERROR_FILE_NOT_FOUND
         return S_OK
-    except:
+    except Exception as e:
+        print(e)
         return ERROR_INVALID_PARAMETER
 
 
 @ProjectedFS.PRJ_GET_PLACEHOLDER_INFO_CB
 def get_placeholder_info(callbackData):
     if DEBUG:
-        print(f"Fetching placeholder info: {callbackData.contents.FilePathName}")
+        print(
+            f"Fetching placeholder info: {callbackData.contents.FilePathName}")
     path = callbackData.contents.FilePathName
     full_path = os.path.join(ROOT_POINT, path)
     if os.path.exists(full_path):
         placeholderInfo = ProjectedFS.PRJ_PLACEHOLDER_INFO()
         placeholderInfo.FileBasicInfo = get_fileinfo(full_path)
         # TODO: size vs size on disk?
-        ProjectedFS.PrjWritePlaceholderInfo(callbackData.contents.NamespaceVirtualizationContext, path, placeholderInfo, ctypes.sizeof(placeholderInfo))
+        ProjectedFS.PrjWritePlaceholderInfo(
+            callbackData.contents.NamespaceVirtualizationContext, path, placeholderInfo, ctypes.sizeof(placeholderInfo))
         return S_OK
     else:
         return ERROR_FILE_NOT_FOUND
@@ -101,7 +107,8 @@ def get_placeholder_info(callbackData):
 @ProjectedFS.PRJ_GET_FILE_DATA_CB
 def get_file_data(callbackData, byteOffset, length):
     if DEBUG:
-        print(f"Getting file data: {callbackData.contents.FilePathName} (+{byteOffset} for {length})")
+        print(
+            f"Getting file data: {callbackData.contents.FilePathName} (+{byteOffset} for {length})")
     path = callbackData.contents.FilePathName
     full_path = os.path.join(ROOT_POINT, path)
     if os.path.exists(full_path):
@@ -111,11 +118,13 @@ def get_file_data(callbackData, byteOffset, length):
         with open(full_path, "rb") as file:
             file.seek(byteOffset)
             contents = file.read(length)
-        writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(callbackData.contents.NamespaceVirtualizationContext, length)
+        writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(
+            callbackData.contents.NamespaceVirtualizationContext, length)
         if not writeBuffer:
             return E_OUTOFMEMORY
         ctypes.memmove(ctypes.c_void_p(writeBuffer), contents, length)
-        ProjectedFS.PrjWriteFileData(callbackData.contents.NamespaceVirtualizationContext, callbackData.contents.DataStreamId, writeBuffer, byteOffset, length)
+        ProjectedFS.PrjWriteFileData(callbackData.contents.NamespaceVirtualizationContext,
+                                     callbackData.contents.DataStreamId, writeBuffer, byteOffset, length)
         ProjectedFS.PrjFreeAlignedBuffer(writeBuffer)
         return S_OK
     else:
@@ -174,37 +183,46 @@ instanceId.Data1 = 0xD137C01A
 instanceId.Data2 = 0xBAAD
 instanceId.Data3 = 0xCAA7
 
-if not os.path.exists(ROOT_POINT):
-    if DEBUG: print(f"{ROOT_POINT} does not exist yet, creating...")
-    os.mkdir(ROOT_POINT)
-
-if not os.path.isdir(ROOT_POINT):
-    if DEBUG: print(f"{ROOT_POINT} is not a directory, exiting...")
-    sys.exit(1)
-
-if not os.path.exists(MOUNT_POINT):
-    if DEBUG: print(f"{MOUNT_POINT} does not exist yet, creating...")
-    os.mkdir(MOUNT_POINT)
-
-if not os.path.isdir(MOUNT_POINT):
-    if DEBUG: print(f"{MOUNT_POINT} is not a directory, exiting...")
-    sys.exit(1)
-
-if ProjectedFS.PrjMarkDirectoryAsPlaceholder(MOUNT_POINT, None, None, instanceId) != S_OK:
-    if DEBUG: print(f"Error marking {MOUNT_POINT} directory as placeholder, exiting...")
-    sys.exit(1)
-
 
 def create():
-    if DEBUG: print("Starting virtualization instance")
+    if not os.path.exists(ROOT_POINT):
+        if DEBUG:
+            print(f"{ROOT_POINT} does not exist yet, creating...")
+        os.mkdir(ROOT_POINT)
+
+    if not os.path.isdir(ROOT_POINT):
+        if DEBUG:
+            print(f"{ROOT_POINT} is not a directory, exiting...")
+        sys.exit(1)
+
+    if not os.path.exists(MOUNT_POINT):
+        if DEBUG:
+            print(f"{MOUNT_POINT} does not exist yet, creating...")
+        os.mkdir(MOUNT_POINT)
+
+    if not os.path.isdir(MOUNT_POINT):
+        if DEBUG:
+            print(f"{MOUNT_POINT} is not a directory, exiting...")
+        sys.exit(1)
+
+    if ProjectedFS.PrjMarkDirectoryAsPlaceholder(MOUNT_POINT, None, None, instanceId) != S_OK:
+        if DEBUG:
+            print(
+                f"Error marking {MOUNT_POINT} directory as placeholder, exiting...")
+        sys.exit(1)
+
+    if DEBUG:
+        print("Starting virtualization instance")
     global instanceHandle
     instanceHandle = ProjectedFS.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT()
     if ProjectedFS.PrjStartVirtualizing(MOUNT_POINT, callbackTable, None, startOptions, instanceHandle) != S_OK:
-        if DEBUG: print("Error starting virtualization, exiting...")
+        if DEBUG:
+            print("Error starting virtualization, exiting...")
         sys.exit(1)
 
 
 def destroy():
     ProjectedFS.PrjStopVirtualizing(instanceHandle)
-    if DEBUG: print("Stopped virtualization instance")
+    if DEBUG:
+        print("Stopped virtualization instance")
     shutil.rmtree(MOUNT_POINT)

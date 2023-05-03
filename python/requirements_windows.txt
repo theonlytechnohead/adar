@@ -1,5 +1,4 @@
 comtypes
 ipaddress
 netifaces
-socket
 zeroconf
