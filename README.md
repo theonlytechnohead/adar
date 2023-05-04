@@ -11,6 +11,12 @@ This is my BAdvSci(Hons) research project
 
 Please see [SPEC.md](SPEC.md)
 
+## Requirements
+
+I assume you have a working Windows installation, with Python 3.10 (or thereabout), and the Projected File System feature enabled
+
+Alternatively, it should also work on a GNU + Linux distribution that has the requirements for FUSE installed and working, along with Python 3.10 (or thereabout)
+
 ## Running
 
 To build/run the project:
@@ -18,16 +24,16 @@ To build/run the project:
 1. Install `simplenc`
 
 ```sh
-~ $ cd python
-~/python $ cd simplenc
-~/python/simple_nc-main $ pip install .
+~/adar $ cd python
+~/adar/python $ cd simplenc
+~/adar/python/simple_nc-main $ pip install .
 ```
 
 2. Install requirements
 
 ```sh
-~ $ cd python
-~/python $ pip install -r requirements.txt
+~/adar $ cd python
+~/adar/python $ pip install -r requirements.txt
 ```
 
 Enable `Windows Projected File System` in `Turn Windows features on or off`
@@ -35,13 +41,13 @@ Enable `Windows Projected File System` in `Turn Windows features on or off`
 3. Run the program
 
 ```sh
-~ $ cd python
-~/python $ python main.py
+~/adar $ cd python
+~/adar/python $ python main.py
 ```
 
 4. Test with the client
 
 ```sh
-~ $ cd python
-~/python $ python client.py Hello, world!
+~/adar $ cd python
+~/adar/python $ python client.py Hello, world!
 ```
