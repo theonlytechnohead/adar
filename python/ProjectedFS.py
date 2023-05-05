@@ -70,7 +70,7 @@ PRJ_DIR_ENTRY_BUFFER_HANDLE = HANDLE
 
 # typedef struct PRJ_NOTIFICATION_MAPPING
 class PRJ_NOTIFICATION_MAPPING(Structure):
-  _fields = [('NotificationBitMask', c_int),
+  _fields_ = [('NotificationBitMask', c_int),
              ('NotificationRoot', LPCWSTR)]
 # } PRJ_NOTIFICATION_MAPPING;
 
@@ -83,7 +83,7 @@ PRJ_FLAG_USE_NEGATIVE_PATH_CACHE    = 0x00000001
 # typedef struct PRJ_STARTVIRTUALIZING_OPTIONS
 # {
 class PRJ_STARTVIRTUALIZING_OPTIONS(Structure):
-  _fields = [('Flags', c_int),
+  _fields_ = [('Flags', c_int),
              ('PoolThreadCount', c_uint),
              ('ConcurrentThreadCount', c_uint),
              ('NotificationMappings', POINTER(PRJ_NOTIFICATION_MAPPING)),
