@@ -161,6 +161,21 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
                 os.mkdir(path)
             else:
                 open(path, "x").close()
+        case ProjectedFS.PRJ_NOTIFICATION_FILE_RENAMED:
+            if DEBUG:
+                print(f"renamed: {callbackData.contents.FilePathName} -> {destinationFileName}")
+            path = os.path.join(ROOT_POINT, callbackData.contents.FilePathName)
+            new_path = os.path.join(ROOT_POINT, destinationFileName)
+            os.rename(path, new_path)
+        case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_MODIFIED:
+            if DEBUG:
+                print(f"close w/ modification: {callbackData.contents.FilePathname}")
+            # https://stackoverflow.com/questions/55069340/windows-projected-file-system-read-only
+            # writes always convert a placeholder into a "full" file (but we still get notifications, etc.)
+            # so we need to be notified of this and rewrite the modified file into the backing store
+            root_path = os.path.join(ROOT_POINT, callbackData.contents.FilePathName)
+            mount_path = os.path.join(MOUNT_POINT, callbackData.contents.FilePathName)
+            shutil.copy(mount_path, root_path)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_DELETED:
             if DEBUG:
                 print(f"deleted: {callbackData.contents.FilePathName}")
@@ -169,12 +184,6 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
                 shutil.rmtree(path)
             else:
                 os.remove(path)
-        case ProjectedFS.PRJ_NOTIFICATION_FILE_RENAMED:
-            if DEBUG:
-                print(f"renamed: {callbackData.contents.FilePathName} -> {destinationFileName}")
-            path = os.path.join(ROOT_POINT, callbackData.contents.FilePathName)
-            new_path = os.path.join(ROOT_POINT, destinationFileName)
-            os.rename(path, new_path)
     return S_OK
 
 
@@ -192,10 +201,7 @@ callbackTable.NotificationCallback = notified
 
 notificationMappings = (ProjectedFS.PRJ_NOTIFICATION_MAPPING(),)
 notificationMappings[0].NotificationRoot = ""
-notificationMappings[0].NotificationBitMask = ProjectedFS.PRJ_NOTIFY_NEW_FILE_CREATED | ProjectedFS.PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_DELETED | ProjectedFS.PRJ_NOTIFY_FILE_RENAMED
-
-# https://stackoverflow.com/questions/55069340/windows-projected-file-system-read-only
-# writes always convert a placeholder into a "full" file, so we need to be notified of this and then rewrite the file into the backing store, then perhaps re-convert to a placeholder?
+notificationMappings[0].NotificationBitMask = ProjectedFS.PRJ_NOTIFY_NEW_FILE_CREATED | ProjectedFS.PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_DELETED | ProjectedFS.PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_MODIFIED | ProjectedFS.PRJ_NOTIFY_FILE_RENAMED
 
 startOptions = ProjectedFS.PRJ_STARTVIRTUALIZING_OPTIONS()
 startOptions.NotificationMappings = notificationMappings
