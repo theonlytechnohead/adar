@@ -149,11 +149,32 @@ notification_table = {
 
 @ProjectedFS.PRJ_NOTIFICATION_CB
 def notified(callbackData, isDirectory, notification, destinationFileName, operationParameters):
-    if notification == ProjectedFS.PRJ_NOTIFICATION_FILE_OPENED:
-        return S_OK
     message = notification_table[notification]
     if DEBUG:
-        print(f"Notified: {message} @ {callbackData.contents.FilePathName}")
+        print(f"Notified ({message}) ", end="")
+    match notification:
+        case ProjectedFS.PRJ_NOTIFICATION_NEW_FILE_CREATED:
+            if DEBUG:
+                print(f"created: {callbackData.contents.FilePathName}")
+            path = os.path.join(ROOT_POINT, callbackData.contents.FilePathName)
+            if isDirectory:
+                os.mkdir(path)
+            else:
+                open(path, "x").close()
+        case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_DELETED:
+            if DEBUG:
+                print(f"deleted: {callbackData.contents.FilePathName}")
+            path = os.path.join(ROOT_POINT, callbackData.contents.FilePathName)
+            if isDirectory:
+                shutil.rmtree(path)
+            else:
+                os.remove(path)
+        case ProjectedFS.PRJ_NOTIFICATION_FILE_RENAMED:
+            if DEBUG:
+                print(f"renamed: {callbackData.contents.FilePathName} -> {destinationFileName}")
+            path = os.path.join(ROOT_POINT, callbackData.contents.FilePathName)
+            new_path = os.path.join(ROOT_POINT, destinationFileName)
+            os.rename(path, new_path)
     return S_OK
 
 
@@ -169,9 +190,12 @@ callbackTable.GetFileDataCallback = get_file_data
 callbackTable.NotificationCallback = notified
 
 
-notificationMappings = [ProjectedFS.PRJ_NOTIFICATION_MAPPING(),]
+notificationMappings = (ProjectedFS.PRJ_NOTIFICATION_MAPPING(),)
 notificationMappings[0].NotificationRoot = ""
-notificationMappings[0].NotificationBitMask = ProjectedFS.PRJ_NOTIFY_NEW_FILE_CREATED
+notificationMappings[0].NotificationBitMask = ProjectedFS.PRJ_NOTIFY_NEW_FILE_CREATED | ProjectedFS.PRJ_NOTIFY_FILE_HANDLE_CLOSED_FILE_DELETED | ProjectedFS.PRJ_NOTIFY_FILE_RENAMED
+
+# https://stackoverflow.com/questions/55069340/windows-projected-file-system-read-only
+# writes always convert a placeholder into a "full" file, so we need to be notified of this and then rewrite the file into the backing store, then perhaps re-convert to a placeholder?
 
 startOptions = ProjectedFS.PRJ_STARTVIRTUALIZING_OPTIONS()
 startOptions.NotificationMappings = notificationMappings
