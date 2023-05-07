@@ -44,14 +44,14 @@ def end_directory_enumeration(callbackData, enumerationId):
 
 def get_fileinfo(path) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
     fileInfo = ProjectedFS.PRJ_FILE_BASIC_INFO()
+    stats = os.stat(path)
+    fileInfo.CreationTime = filetimes.timestamp_to_filetime(stats.st_ctime)
+    fileInfo.LastAccessTime = filetimes.timestamp_to_filetime(stats.st_atime)
+    fileInfo.LastWriteTime = filetimes.timestamp_to_filetime(stats.st_mtime)
+    fileInfo.ChangeTime = filetimes.timestamp_to_filetime(stats.st_mtime)
+    fileInfo.FileAttributes = stats.st_file_attributes
     if os.path.isfile(path):
-        stats = os.stat(path)
         fileInfo.FileSize = stats.st_size
-        fileInfo.CreationTime = filetimes.timestamp_to_filetime(stats.st_ctime)
-        fileInfo.LastAccessTime = filetimes.timestamp_to_filetime(stats.st_atime)
-        fileInfo.LastWriteTime = filetimes.timestamp_to_filetime(stats.st_mtime)
-        fileInfo.ChangeTime = filetimes.timestamp_to_filetime(stats.st_mtime)
-        fileInfo.FileAttributes = stats.st_file_attributes
     else:
         fileInfo.IsDirectory = True
     return fileInfo
@@ -131,27 +131,10 @@ def get_file_data(callbackData, byteOffset, length):
         return ERROR_FILE_NOT_FOUND
 
 
-notification_table = {
-    0x00000002: "PRJ_NOTIFICATION_FILE_OPENED",
-    0x00000004: "PRJ_NOTIFICATION_NEW_FILE_CREATED",
-    0x00000008: "PRJ_NOTIFICATION_FILE_OVERWRITTEN",
-    0x00000010: "PRJ_NOTIFICATION_PRE_DELETE",
-    0x00000020: "PRJ_NOTIFICATION_PRE_RENAME",
-    0x00000040: "PRJ_NOTIFICATION_PRE_SET_HARDLINK",
-    0x00000080: "PRJ_NOTIFICATION_FILE_RENAMED",
-    0x00000100: "PRJ_NOTIFICATION_HARDLINK_CREATED",
-    0x00000200: "PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_NO_MODIFICATION",
-    0x00000400: "PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_MODIFIED",
-    0x00000800: "PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_DELETED",
-    0x00001000: "PRJ_NOTIFICATION_FILE_PRE_CONVERT_TO_FULL",
-}
-
-
 @ProjectedFS.PRJ_NOTIFICATION_CB
 def notified(callbackData, isDirectory, notification, destinationFileName, operationParameters):
-    message = notification_table[notification]
     if DEBUG:
-        print(f"Notified ({message}) ", end="")
+        print(f"Notified ({notification}) ", end="")
     match notification:
         case ProjectedFS.PRJ_NOTIFICATION_NEW_FILE_CREATED:
             if DEBUG:
