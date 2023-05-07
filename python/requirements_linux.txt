@@ -1,4 +1,0 @@
-fusepy
-ipaddress
-netifaces
-zeroconf
