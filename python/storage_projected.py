@@ -11,6 +11,7 @@ from peers import *
 DEBUG = False
 
 ROOT_POINT = ".root"
+ROOT_POINTS = (ROOT_POINT + "0", ROOT_POINT + "1")
 MOUNT_POINT = "mount"
 FILE_ATTRIBUTE_HIDDEN = 0x02
 
@@ -62,7 +63,8 @@ def get_directory_enumeration(callbackData, enumerationId, searchExpression, dir
     try:
         if (("COMPLETED" not in sessions[enumerationId.contents]) or (callbackData.contents.Flags & ProjectedFS.PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN)):
             # TODO: searchExpression + wildcard support
-            path = os.path.join(ROOT_POINT, callbackData.contents.FilePathName)
+            path = os.path.join(
+                ROOT_POINTS[0], callbackData.contents.FilePathName)
             if DEBUG:
                 print(
                     f"Getting directory enumeration: {callbackData.contents.FilePathName}")
@@ -92,7 +94,7 @@ def get_placeholder_info(callbackData):
         print(
             f"Fetching placeholder info: {callbackData.contents.FilePathName}")
     path = callbackData.contents.FilePathName
-    full_path = os.path.join(ROOT_POINT, path)
+    full_path = os.path.join(ROOT_POINTS[0], path)
     if os.path.exists(full_path):
         placeholderInfo = ProjectedFS.PRJ_PLACEHOLDER_INFO()
         placeholderInfo.FileBasicInfo = get_fileinfo(full_path)
@@ -110,7 +112,7 @@ def get_file_data(callbackData, byteOffset, length):
         print(
             f"Getting file data: {callbackData.contents.FilePathName} (+{byteOffset} for {length})")
     path = callbackData.contents.FilePathName
-    full_path = os.path.join(ROOT_POINT, path)
+    full_path = os.path.join(ROOT_POINTS[0], path)
     if os.path.exists(full_path):
         fileInfo = get_fileinfo(full_path)
         if length > fileInfo.FileSize:
@@ -139,34 +141,42 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
         case ProjectedFS.PRJ_NOTIFICATION_NEW_FILE_CREATED:
             if DEBUG:
                 print(f"created: {callbackData.contents.FilePathName}")
-            path = os.path.join(ROOT_POINT, callbackData.contents.FilePathName)
-            if isDirectory:
-                os.mkdir(path)
-            else:
-                open(path, "x").close()
+            for root in ROOT_POINTS:
+                path = os.path.join(root, callbackData.contents.FilePathName)
+                if isDirectory:
+                    os.mkdir(path)
+                else:
+                    open(path, "x").close()
         case ProjectedFS.PRJ_NOTIFICATION_FILE_RENAMED:
             if DEBUG:
-                print(f"renamed: {callbackData.contents.FilePathName} -> {destinationFileName}")
-            path = os.path.join(ROOT_POINT, callbackData.contents.FilePathName)
-            new_path = os.path.join(ROOT_POINT, destinationFileName)
-            os.rename(path, new_path)
+                print(
+                    f"renamed: {callbackData.contents.FilePathName} -> {destinationFileName}")
+            for root in ROOT_POINTS:
+                path = os.path.join(root, callbackData.contents.FilePathName)
+                new_path = os.path.join(root, destinationFileName)
+                os.rename(path, new_path)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_MODIFIED:
             if DEBUG:
-                print(f"close w/ modification: {callbackData.contents.FilePathname}")
+                print(
+                    f"close w/ modification: {callbackData.contents.FilePathname}")
             # https://stackoverflow.com/questions/55069340/windows-projected-file-system-read-only
             # writes always convert a placeholder into a "full" file (but we still get notifications, etc.)
             # so we need to be notified of this and rewrite the modified file into the backing store
-            root_path = os.path.join(ROOT_POINT, callbackData.contents.FilePathName)
-            mount_path = os.path.join(MOUNT_POINT, callbackData.contents.FilePathName)
-            shutil.copy(mount_path, root_path)
+            for root in ROOT_POINTS:
+                root_path = os.path.join(
+                    root, callbackData.contents.FilePathName)
+                mount_path = os.path.join(
+                    MOUNT_POINT, callbackData.contents.FilePathName)
+                shutil.copy(mount_path, root_path)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_DELETED:
             if DEBUG:
                 print(f"deleted: {callbackData.contents.FilePathName}")
-            path = os.path.join(ROOT_POINT, callbackData.contents.FilePathName)
-            if isDirectory:
-                shutil.rmtree(path)
-            else:
-                os.remove(path)
+            for root in ROOT_POINTS:
+                path = os.path.join(root, callbackData.contents.FilePathName)
+                if isDirectory:
+                    shutil.rmtree(path)
+                else:
+                    os.remove(path)
     return S_OK
 
 
@@ -198,16 +208,18 @@ instanceId.Data3 = 0xCAA7
 
 
 def create():
-    if not os.path.exists(ROOT_POINT):
-        if DEBUG:
-            print(f"{ROOT_POINT} does not exist yet, creating...")
-        os.mkdir(ROOT_POINT)
-
-    if not os.path.isdir(ROOT_POINT):
-        if DEBUG:
-            print(f"{ROOT_POINT} is not a directory, exiting...")
-        sys.exit(1)
-
+    for root in ROOT_POINTS:
+        # check existance
+        if not os.path.exists(root):
+            if DEBUG:
+                print(f"{root} does not exist yet, creating...")
+            os.mkdir(root)
+        # check directory
+        if not os.path.isdir(root):
+            if DEBUG:
+                print(f"{root} is not a directory, exiting...")
+            sys.exit(1)
+    # only one mount point
     if not os.path.exists(MOUNT_POINT):
         if DEBUG:
             print(f"{MOUNT_POINT} does not exist yet, creating...")
@@ -218,7 +230,7 @@ def create():
             print(f"{MOUNT_POINT} is not a directory, exiting...")
         sys.exit(1)
 
-    if ProjectedFS.PrjMarkDirectoryAsPlaceholder(MOUNT_POINT, None, None, instanceId) != S_OK:
+    if ProjectedFS.PrjMarkDirectoryAsPlaceholder(os.path.abspath(MOUNT_POINT), None, None, instanceId) != S_OK:
         if DEBUG:
             print(
                 f"Error marking {MOUNT_POINT} directory as placeholder, exiting...")
@@ -228,7 +240,7 @@ def create():
         print("Starting virtualization instance")
     global instanceHandle
     instanceHandle = ProjectedFS.PRJ_NAMESPACE_VIRTUALIZATION_CONTEXT()
-    if ProjectedFS.PrjStartVirtualizing(MOUNT_POINT, callbackTable, None, startOptions, instanceHandle) != S_OK:
+    if ProjectedFS.PrjStartVirtualizing(os.path.abspath(MOUNT_POINT), callbackTable, None, startOptions, instanceHandle) != S_OK:
         if DEBUG:
             print("Error starting virtualization, exiting...")
         sys.exit(1)
