@@ -51,11 +51,61 @@ def get_fileinfo(path) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
     fileInfo.LastWriteTime = filetimes.timestamp_to_filetime(stats.st_mtime)
     fileInfo.ChangeTime = filetimes.timestamp_to_filetime(stats.st_mtime)
     fileInfo.FileAttributes = stats.st_file_attributes
-    if os.path.isfile(path):
-        fileInfo.FileSize = stats.st_size
-    else:
+    if not os.path.isfile(path):
         fileInfo.IsDirectory = True
     return fileInfo
+
+
+def get_filesize(filename, info) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
+    total_size = 0
+    for root in ROOT_POINTS:
+        path = os.path.join(root, filename)
+        stats = os.stat(path)
+        total_size += stats.st_size
+    info.FileSize = total_size
+    return info
+
+
+def read_file(path, offset: int, length: int) -> bytes:
+    output = bytearray(length)
+    read = 0
+    files = []
+    for root in ROOT_POINTS:
+        root_path = os.path.join(root, path)
+        files.append(open(root_path, "rb"))
+    for index, file in enumerate(files):
+        file_offset = offset // len(ROOT_POINTS)
+        other_offset = offset % len(ROOT_POINTS)
+        if other_offset == index:
+            file_offset += other_offset
+        if DEBUG:
+            print(f"skipping {file_offset} bytes for root {index}")
+        file.seek(file_offset)
+    while read < length:
+        index = (offset + read) % len(ROOT_POINTS)
+        output[read:read + 1] = files[index].read(1)
+        read += 1
+    for file in files:
+        file.close()
+    return bytes(output)
+
+
+def write_file(path):
+    mount_path = os.path.join(MOUNT_POINT, path)
+    size = os.stat(mount_path).st_size
+    written = 0
+    files = []
+    for root in ROOT_POINTS:
+        root_path = os.path.join(root, path)
+        files.append(open(root_path, "wb"))
+    with open(mount_path, "rb") as file:
+        while written < size:
+            byte = file.read(1)
+            index = written % len(ROOT_POINTS)
+            files[index].write(byte)
+            written += 1
+    for file in files:
+        file.close()
 
 
 @ProjectedFS.PRJ_GET_DIRECTORY_ENUMERATION_CB
@@ -97,7 +147,9 @@ def get_placeholder_info(callbackData):
     full_path = os.path.join(ROOT_POINTS[0], path)
     if os.path.exists(full_path):
         placeholderInfo = ProjectedFS.PRJ_PLACEHOLDER_INFO()
-        placeholderInfo.FileBasicInfo = get_fileinfo(full_path)
+        info = get_fileinfo(full_path)
+        info = get_filesize(callbackData.contents.FilePathName, info)
+        placeholderInfo.FileBasicInfo = info
         # TODO: size vs size on disk?
         ProjectedFS.PrjWritePlaceholderInfo(
             callbackData.contents.NamespaceVirtualizationContext, path, placeholderInfo, ctypes.sizeof(placeholderInfo))
@@ -115,11 +167,11 @@ def get_file_data(callbackData, byteOffset, length):
     full_path = os.path.join(ROOT_POINTS[0], path)
     if os.path.exists(full_path):
         fileInfo = get_fileinfo(full_path)
+        fileInfo = get_filesize(callbackData.contents.FilePathName, fileInfo)
         if length > fileInfo.FileSize:
             return E_INVALIDARG
-        with open(full_path, "rb") as file:
-            file.seek(byteOffset)
-            contents = file.read(length)
+        contents = read_file(
+            callbackData.contents.FilePathName, byteOffset, length)
         writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(
             callbackData.contents.NamespaceVirtualizationContext, length)
         if not writeBuffer:
@@ -162,12 +214,7 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
             # https://stackoverflow.com/questions/55069340/windows-projected-file-system-read-only
             # writes always convert a placeholder into a "full" file (but we still get notifications, etc.)
             # so we need to be notified of this and rewrite the modified file into the backing store
-            for root in ROOT_POINTS:
-                root_path = os.path.join(
-                    root, callbackData.contents.FilePathName)
-                mount_path = os.path.join(
-                    MOUNT_POINT, callbackData.contents.FilePathName)
-                shutil.copy(mount_path, root_path)
+            write_file(callbackData.contents.FilePathName)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_DELETED:
             if DEBUG:
                 print(f"deleted: {callbackData.contents.FilePathName}")
