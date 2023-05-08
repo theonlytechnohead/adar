@@ -3,3 +3,4 @@ fusepy; os_name == "posix"
 ipaddress
 netifaces
 zeroconf
+zfex
