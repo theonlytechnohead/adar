@@ -2,18 +2,18 @@ import base64
 import zfex
 
 
-k = 1  # number of blocks required to decode, 1 <= k <= m
+k = 2  # number of blocks required to decode, 1 <= k <= m
 m = 3  # number of blocks produced in total, k <= m <= 256
 
 
-def encode(byte: bytes) -> list[bytes]:
+def encode(byte1: bytes, byte2: bytes) -> list[bytes]:
     encoder = zfex.Encoder(k, m)
-    return encoder.encode([byte], (1, 2))
+    return encoder.encode([byte1, byte2], (0, 1))
 
 
-def decode(byte: bytes) -> bytes:
+def decode(byte1: bytes, byte2: bytes) -> bytes:
     decoder = zfex.Decoder(k, m)
-    return decoder.decode((byte,), (1,))
+    return decoder.decode((byte1, byte2), (0, 1))
 
 
 if __name__ == "__main__":

@@ -3,7 +3,7 @@ import os
 import shutil
 import sys
 
-
+import fec
 import filetimes
 import ProjectedFS
 from peers import *
@@ -82,9 +82,16 @@ def read_file(path, offset: int, length: int) -> bytes:
             print(f"skipping {file_offset} bytes for root {index}")
         file.seek(file_offset)
     while read < length:
-        index = (offset + read) % len(ROOT_POINTS)
-        output[read:read + 1] = files[index].read(1)
+        block1 = files[0].read(1)
+        block2 = files[1].read(1)
+        if block2 == b"":
+            block2 = b"\x00"
+        decoded1, decoded2 = fec.decode(block1, block2)
+        output[read:read + 1] = decoded1
         read += 1
+        if block2 != b"":
+            output[read:read + 1] = decoded2
+            read += 1
     for file in files:
         file.close()
     return bytes(output)
@@ -100,10 +107,15 @@ def write_file(path):
         files.append(open(root_path, "wb"))
     with open(mount_path, "rb") as file:
         while written < size:
-            byte = file.read(1)
-            index = written % len(ROOT_POINTS)
-            files[index].write(byte)
-            written += 1
+            byte1 = file.read(1)
+            byte2 = file.read(1)
+            if byte2 == b"":
+                byte2 = b"\x00"
+            block1, block2 = fec.encode(byte1, byte2)
+            files[0].write(block1)
+            if byte2 != b"\x00":
+                files[1].write(block2)
+            written += 2
     for file in files:
         file.close()
 
