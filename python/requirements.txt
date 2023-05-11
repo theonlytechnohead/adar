@@ -2,5 +2,6 @@ comtypes; os_name == "nt"
 fusepy; os_name == "posix"
 ipaddress
 netifaces
+py-diffie-hellman
 zeroconf
 zfex

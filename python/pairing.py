@@ -1,5 +1,7 @@
+import base64
 import os
 import socket
+from diffiehellman import DiffieHellman
 from zeroconf import ServiceInfo, IPVersion
 
 from constants import PORT
@@ -37,10 +39,10 @@ def request_pair(info: ServiceInfo) -> bool:
     return accepted
 
 
-def store_pair(info: ServiceInfo):
+def store_pair(info: ServiceInfo, key: bytes):
     with open("pairings", "a") as file:
         id = str(info.properties[b"uuid"], "utf-8")
-        file.write(f"{id}\n")
+        file.write(f"{id}:{base64.b64encode(key).decode()}\n")
 
 
 def pair(name: str, info: ServiceInfo):
@@ -53,9 +55,45 @@ def pair(name: str, info: ServiceInfo):
             print("Pairing failed")
 
 
+def exchange_keys(info: ServiceInfo, key: bytes) -> bytes:
+    address, mode = check_service(info)
+    with socket.socket(mode, socket.SOCK_STREAM) as sock:
+        sock.connect((address, PORT))
+        sock.sendall(bytes("key!", "utf-8") + key)
+        other = sock.recv(1024)
+    return other
+
+
+def share_keys(info: ServiceInfo):
+    generator = DiffieHellman(group=14, key_bits=1024)
+    public_key = generator.get_public_key()
+    other_key = exchange_keys(info, public_key)
+    shared_key = generator.generate_shared_key(other_key)
+    return shared_key
+
+
 def connect(info: ServiceInfo) -> tuple[str, socket.socket]:
     address, mode = check_service(info)
     connection = socket.socket(mode, socket.SOCK_STREAM)
     connection.connect((address, PORT))
     return info.properties[b"uuid"], connection
 
+
+if __name__ == "__main__":
+    # automatically generate two key pairs
+    dh1 = DiffieHellman(group=14, key_bits=540)
+    dh2 = DiffieHellman(group=14, key_bits=540)
+
+    # get both public keys
+    dh1_public = dh1.get_public_key()
+    dh2_public = dh2.get_public_key()
+
+    # generate shared key based on the other side's public key
+    dh1_shared = dh1.generate_shared_key(dh2_public)
+    dh2_shared = dh2.generate_shared_key(dh1_public)
+
+    # the shared keys should be equal
+    assert dh1_shared == dh2_shared
+
+    print(f"{base64.b64encode(dh1_shared).decode()}")
+    print(f"{base64.b64encode(dh2_shared).decode()}")
