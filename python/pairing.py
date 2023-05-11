@@ -56,28 +56,28 @@ def pair(name: str, info: ServiceInfo):
             print("Pairing failed")
 
 
-def exchange_keys(address: str, mode: socket.AddressFamily) -> bytes:
-    with socket.socket(mode, socket.SOCK_STREAM) as sock:
-        sock.connect((address, PORT))
-        data = bytes("key?", "utf-8") + generators[address].get_public_key() + bytes("\n", "utf-8")
-        sock.sendall(data)
-        other = sock.recv(len(data))  # should be 4 + 1024 + 1 = 1029
-    return other[4:-1]
-
-
-def share_keys(address: str, mode: socket.AddressFamily):
-    generators[address] = DiffieHellman(group=14, key_bits=1024)
-    other_key = exchange_keys(address, mode)
-    shared_key = generators[address].generate_shared_key(other_key)
-    return shared_key == keys[address]
-
-
 def connect(info: ServiceInfo) -> tuple[str, socket.socket]:
+    # fetch address to connect to
     address, mode = check_service(info)
-    share_keys(address, mode)
+    # initiate connection
     connection = socket.socket(mode, socket.SOCK_STREAM)
     connection.connect((address, PORT))
-    return address, connection
+    # generate a public key to share
+    generators[address] = DiffieHellman(group=14, key_bits=1024)
+    our_key = generators[address].get_public_key()
+    # send a key request message along with our key
+    data = bytes("key?", "utf-8") + our_key + bytes("\n", "utf-8")
+    connection.sendall(data)
+    # length of received data should be 4 + 1024 + 1 = 1029
+    other_key = connection.recv(len(data))[4:-1]
+    # generate the shared key
+    shared_key = generators[address].generate_shared_key(other_key)
+    # if it all checks out, continue the connection
+    if address in keys.keys() and shared_key == keys[address]:
+        return address, connection
+    # otherwise, stop the connection (unsecure)
+    connection.close()
+    return address, None
 
 
 if __name__ == "__main__":

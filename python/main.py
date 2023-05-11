@@ -13,7 +13,13 @@ stop = False
 class AdarHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
         self.raw_data = self.rfile.readline(2048)
-        if not self.raw_data.endswith("\n"):
+        try:
+            valid = self.raw_data.decode().endswith("\n")
+        except UnicodeDecodeError:
+            # error, invalid message!
+            self.wfile.write(bytes("\n", "utf-8"))
+            return
+        if not valid:
             # error, invalid message!
             self.wfile.write(bytes("\n", "utf-8"))
             return
@@ -22,8 +28,8 @@ class AdarHandler(socketserver.StreamRequestHandler):
             self.data = b"sure"
         elif self.data.startswith("key?"):
             generator = generators[self.client_address]
-            raw_data = self.data[4:].encode()
-            shared_key = generator.generate_shared_key(raw_data)
+            other_key = self.raw_data[4:-1]
+            shared_key = generator.generate_shared_key(other_key)
             self.data = bytes("key!", "utf-8") + generator.get_public_key() + bytes("\n", "utf-8")
             keys[self.client_address] = shared_key
         else:
