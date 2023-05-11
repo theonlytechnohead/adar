@@ -12,7 +12,12 @@ stop = False
 
 class AdarHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
-        self.data = str(self.rfile.readline().strip(), "utf-8")
+        self.raw_data = self.rfile.readline(2048)
+        if not self.raw_data.endswith("\n"):
+            # error, invalid message!
+            self.wfile.write(bytes("\n", "utf-8"))
+            return
+        self.data = str(self.raw_data.strip(), "utf-8")
         if self.data == "pair?":
             self.data = b"sure"
         elif self.data.startswith("key?"):
