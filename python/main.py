@@ -15,23 +15,28 @@ class AdarHandler(socketserver.StreamRequestHandler):
         self.raw_data = self.rfile.readline(2048)
         try:
             valid = self.raw_data.decode().endswith("\n")
-        except UnicodeDecodeError:
+        except UnicodeDecodeError as e:
             # error, invalid message!
+            print(f"Caught a UnicodeDecodeError: {e.reason}")
             self.wfile.write(bytes("\n", "utf-8"))
             return
         if not valid:
             # error, invalid message!
+            print(f"Message is invalid!")
             self.wfile.write(bytes("\n", "utf-8"))
             return
         self.data = str(self.raw_data.strip(), "utf-8")
         if self.data == "pair?":
             self.data = b"sure"
         elif self.data.startswith("key?"):
-            generator = generators[self.client_address]
-            other_key = self.raw_data[4:-1]
+            if self.client_address[0] in generators.keys():
+                generator = generators[self.client_address[0]]
+            else:
+                generator = DiffieHellman(group=14, key_bits=1024)
+            other_key = base64.b64decode(self.raw_data[4:-1])
             shared_key = generator.generate_shared_key(other_key)
-            self.data = bytes("key!", "utf-8") + generator.get_public_key() + bytes("\n", "utf-8")
-            keys[self.client_address] = shared_key
+            self.data = "key!".encode() + base64.b64encode(generator.get_public_key()) + "\n".encode()
+            keys[self.client_address[0]] = shared_key
         else:
             print(f"{self.client_address[0]}: {self.data}")
             self.data = bytes(self.data.upper(), "utf-8")

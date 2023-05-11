@@ -40,10 +40,10 @@ def request_pair(info: ServiceInfo) -> bool:
     return accepted
 
 
-def store_pair(info: ServiceInfo, key: bytes):
+def store_pair(info: ServiceInfo):
     with open("pairings", "a") as file:
         id = str(info.properties[b"uuid"], "utf-8")
-        file.write(f"{id}:{base64.b64encode(key).decode()}\n")
+        file.write(f"{id}\n")
 
 
 def pair(name: str, info: ServiceInfo):
