@@ -27,10 +27,11 @@ class AdarListener(ServiceListener):
 
     def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         info = zc.get_service_info(type_, name)
-        uuid = int(info.properties[b"uuid"])
-        if uuid != ID:
-            peers[uuid].close()
-            del peers[uuid]
+        if info is not None:
+            uuid = int(info.properties[b"uuid"])
+            if uuid != ID:
+                peers[uuid].close()
+                del peers[uuid]
 
 
 def get_local_non_loopback_ipv4_addresses():
