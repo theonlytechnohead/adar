@@ -5,7 +5,7 @@ from diffiehellman import DiffieHellman
 from zeroconf import ServiceInfo, IPVersion
 
 from constants import PORT
-from peers import generators
+from peers import *
 
 
 def check_service(info: ServiceInfo) -> tuple[str, socket.AddressFamily]:
@@ -56,8 +56,7 @@ def pair(name: str, info: ServiceInfo):
             print("Pairing failed")
 
 
-def exchange_keys(info: ServiceInfo) -> bytes:
-    address, mode = check_service(info)
+def exchange_keys(address: str, mode: socket.AddressFamily) -> bytes:
     with socket.socket(mode, socket.SOCK_STREAM) as sock:
         sock.connect((address, PORT))
         data = bytes("key?", "utf-8") + generators[address].get_public_key() + bytes("\n", "utf-8")
@@ -66,19 +65,19 @@ def exchange_keys(info: ServiceInfo) -> bytes:
     return other[4:-1]
 
 
-def share_keys(info: ServiceInfo):
-    address, _ = check_service(info)
+def share_keys(address: str, mode: socket.AddressFamily):
     generators[address] = DiffieHellman(group=14, key_bits=1024)
-    other_key = exchange_keys(info)
+    other_key = exchange_keys(address, mode)
     shared_key = generators[address].generate_shared_key(other_key)
-    return shared_key
+    return shared_key == keys[address]
 
 
 def connect(info: ServiceInfo) -> tuple[str, socket.socket]:
     address, mode = check_service(info)
+    share_keys(address, mode)
     connection = socket.socket(mode, socket.SOCK_STREAM)
     connection.connect((address, PORT))
-    return info.properties[b"uuid"], connection
+    return address, connection
 
 
 if __name__ == "__main__":
