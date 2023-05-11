@@ -6,6 +6,7 @@ from time import sleep
 
 from advertise import *
 from constants import *
+from peers import *
 
 stop = False
 
@@ -14,6 +15,12 @@ class AdarHandler(socketserver.StreamRequestHandler):
         self.data = str(self.rfile.readline().strip(), "utf-8")
         if self.data == "pair?":
             self.data = b"sure"
+        elif self.data.startswith("key?"):
+            generator = generators[self.client_address]
+            raw_data = self.data[4:].encode()
+            shared_key = generator.generate_shared_key(raw_data)
+            self.data = bytes("key!", "utf-8") + generator.get_public_key() + bytes("\n", "utf-8")
+            keys[self.client_address] = shared_key
         else:
             print(f"{self.client_address[0]}: {self.data}")
             self.data = bytes(self.data.upper(), "utf-8")

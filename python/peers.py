@@ -1,1 +1,3 @@
 peers = {}
+generators = {}
+keys = {}
