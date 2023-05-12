@@ -14,14 +14,19 @@ def check_service(info: ServiceInfo) -> tuple[str, socket.AddressFamily]:
     for address in v6:
         if socket.getaddrinfo(address, PORT, socket.AF_INET6):
             if os.name == "posix":
-                ping = os.system(f"ping -c 1 -w 1 {address} >nul 2>&1")
+                ping = os.system(f"ping -c 1 -w 1 -6 {address} >nul 2>&1")
             if os.name == "nt":
-                ping = os.system(f"ping -n 1 -w 1 {address} >nul 2>&1")
+                ping = os.system(f"ping -n 1 -w 1000 -6 {address} >nul 2>&1")
             if ping == 0:
                 return address, socket.AF_INET6
     for address in v4:
         if socket.getaddrinfo(address, PORT, socket.AF_INET):
-            return v4[0], socket.AF_INET
+            if os.name == "posix":
+                ping = os.system(f"ping -c 1 -w 1 -4 {address} >nul 2>&1")
+            if os.name == "nt":
+                ping = os.system(f"ping -n 1 -w 1000 -4 {address} >nul 2>&1")
+            if ping == 0:
+                return v4[0], socket.AF_INET
 
 
 def check_pair(info: ServiceInfo) -> bool:
@@ -72,19 +77,14 @@ def connect(info: ServiceInfo) -> tuple[str, socket.socket]:
     # initiate connection
     connection = socket.socket(mode, socket.SOCK_STREAM)
     connection.connect((address, PORT))
-    print(f"connecting: {address}")
     # generate a public key to share
     our_key = generators[address].get_public_key()
-    print(f"generated public key: {our_key[:10]}")
     # send a key request message along with our key
     data = "key?".encode() + base64.b64encode(our_key) + "\n".encode()
     connection.sendall(data)
-    print(f"sent: {data[:10]}")
     # length of received data should be 4 + 1024 + 1 = 1029
     data = connection.recv(len(data))
-    print(f"recieved: {data[:10]}")
     other_key = base64.b64decode(data[4:-1])
-    print(f"received other key: {other_key[:10]}")
     # generate the shared key
     shared_key = generators[address].generate_shared_key(other_key)
     print(f"computed shared key: {shared_key[:10]}")

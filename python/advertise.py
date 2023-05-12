@@ -13,7 +13,8 @@ class AdarListener(ServiceListener):
         info = zc.get_service_info(type_, name)
         if int(info.properties[b"uuid"]) != ID:
             friendlyname = name.removesuffix(f".{SERVICE}")
-            print(f"Service discovered: {friendlyname}", end="")
+            addresses = info.parsed_addresses()
+            print(f"Service discovered: {friendlyname} {addresses}", end="")
             if paired:= check_pair(info):
                 print(" (already paired)")
             else:
@@ -27,12 +28,7 @@ class AdarListener(ServiceListener):
         pass
 
     def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
-        info = zc.get_service_info(type_, name)
-        if info is not None:
-            uuid = int(info.properties[b"uuid"])
-            if uuid != ID:
-                peers[uuid].close()
-                del peers[uuid]
+        pass
 
 
 def get_local_non_loopback_ipv4_addresses():
