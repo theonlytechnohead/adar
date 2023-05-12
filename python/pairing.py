@@ -10,23 +10,13 @@ from peers import *
 
 def check_service(info: ServiceInfo) -> tuple[str, socket.AddressFamily]:
     v6 = info.parsed_addresses(IPVersion.V6Only)
-    v4 = info.parsed_addresses(IPVersion.V4Only)
     for address in v6:
         if socket.getaddrinfo(address, PORT, socket.AF_INET6):
-            if os.name == "posix":
-                ping = os.system(f"ping -c 1 -w 1 -6 {address} >nul 2>&1")
-            if os.name == "nt":
-                ping = os.system(f"ping -n 1 -w 1000 -6 {address} >nul 2>&1")
-            if ping == 0:
-                return address, socket.AF_INET6
+            return address, socket.AF_INET6
+    v4 = info.parsed_addresses(IPVersion.V4Only)
     for address in v4:
         if socket.getaddrinfo(address, PORT, socket.AF_INET):
-            if os.name == "posix":
-                ping = os.system(f"ping -c 1 -w 1 -4 {address} >nul 2>&1")
-            if os.name == "nt":
-                ping = os.system(f"ping -n 1 -w 1000 -4 {address} >nul 2>&1")
-            if ping == 0:
-                return v4[0], socket.AF_INET
+            return address, socket.AF_INET
 
 
 def check_pair(info: ServiceInfo) -> bool:
