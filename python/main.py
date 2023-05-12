@@ -56,6 +56,8 @@ def handle(signum, frame):
     print("\rStopping...", end="")
     service.close()
     adar.shutdown()
+    for connection in peers.values():
+        connection.close()
     if os.name == "posix":
         storage_fuse.destroy()
     if os.name == "nt":
@@ -66,10 +68,6 @@ def handle(signum, frame):
 if __name__ == "__main__":
     signal.signal(signal.SIGINT, handle)
     signal.signal(signal.SIGTERM, handle)
-    service = zeroconf()
-    adar = dual_stack(("::", PORT), AdarHandler)
-    server = threading.Thread(target=adar.serve_forever)
-    server.start()
     if os.name == "posix":
         # TODO: hookup callbacks w/ `peers`
         import storage_fuse
@@ -80,6 +78,10 @@ if __name__ == "__main__":
         import storage_projected
         storage = threading.Thread(target=storage_projected.create)
         storage.start()
+    adar = dual_stack(("::", PORT), AdarHandler)
+    server = threading.Thread(target=adar.serve_forever)
+    server.start()
+    service = zeroconf()
     while not stop:
         sleep(1)
     print("\tdone")
