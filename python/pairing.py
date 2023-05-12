@@ -13,7 +13,12 @@ def check_service(info: ServiceInfo) -> tuple[str, socket.AddressFamily]:
     v4 = info.parsed_addresses(IPVersion.V4Only)
     for address in v6:
         if socket.getaddrinfo(address, PORT, socket.AF_INET6):
-            return address, socket.AF_INET6
+            if os.name == "posix":
+                ping = os.system(f"ping -c 1 -w 1 {address} >nul 2>&1")
+            if os.name == "nt":
+                ping = os.system(f"ping -n 1 -w 1 {address} >nul 2>&1")
+            if ping == 0:
+                return address, socket.AF_INET6
     for address in v4:
         if socket.getaddrinfo(address, PORT, socket.AF_INET):
             return v4[0], socket.AF_INET
@@ -59,9 +64,9 @@ def pair(name: str, info: ServiceInfo) -> bool:
 
 
 def connect(info: ServiceInfo) -> tuple[str, socket.socket]:
-    print(f"initiating connection")
     # fetch address to connect to
     address, mode = check_service(info)
+    print(f"initiating connection to {address}")
     # instantiate a Diffie-Hellman generator
     generators[address] = DiffieHellman(group=14, key_bits=1024)
     # initiate connection
