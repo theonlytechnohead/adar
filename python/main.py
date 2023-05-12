@@ -30,9 +30,12 @@ class AdarHandler(socketserver.StreamRequestHandler):
             self.data = b"sure"
         elif self.data.startswith("key?"):
             peer: Peer = None
-            for p in peer_list:
-                if self.client_address[0] in p.addresses:
-                    peer = p
+            while peer == None:
+                for p in peer_list:
+                    if self.client_address[0] in p.addresses:
+                        peer = p
+                        break
+                sleep(1)
             if peer.generator == None:
                 print(f"creating generator on request")
                 peer.generator = DiffieHellman(group=14, key_bits=1024)
