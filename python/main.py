@@ -33,8 +33,12 @@ class AdarHandler(socketserver.StreamRequestHandler):
                 generator = generators[self.client_address[0]]
             else:
                 generator = DiffieHellman(group=14, key_bits=1024)
+                generators[self.client_address[0]] = generator
             public_key = generator.get_public_key()
+            other_key = base64.b64decode(self.raw_data[4:-1])
+            shared_key = generator.generate_shared_key(other_key)
             self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
+            print(f"shared key: {shared_key[:10]}")
         else:
             print(f"{self.client_address[0]}: {self.data}")
             self.data = bytes(self.data.upper(), "utf-8")

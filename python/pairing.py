@@ -46,26 +46,29 @@ def store_pair(info: ServiceInfo):
         file.write(f"{id}\n")
 
 
-def pair(name: str, info: ServiceInfo):
+def pair(name: str, info: ServiceInfo) -> bool:
     confirm = input(f"Do you want to pair with {name}? [Y/n] ")
     if confirm.lower() == "y" or confirm == "":
         if request_pair(info):
             print("Pairing accepted")
             store_pair(info)
+            return True
         else:
             print("Pairing failed")
+    return False
 
 
 def connect(info: ServiceInfo) -> tuple[str, socket.socket]:
     print(f"initiating connection")
     # fetch address to connect to
     address, mode = check_service(info)
+    # instantiate a Diffie-Hellman generator
+    generators[address] = DiffieHellman(group=14, key_bits=1024)
     # initiate connection
     connection = socket.socket(mode, socket.SOCK_STREAM)
     connection.connect((address, PORT))
     print(f"connecting: {address}")
     # generate a public key to share
-    generators[address] = DiffieHellman(group=14, key_bits=1024)
     our_key = generators[address].get_public_key()
     print(f"generated public key: {our_key[:10]}")
     # send a key request message along with our key

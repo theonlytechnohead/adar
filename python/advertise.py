@@ -14,13 +14,14 @@ class AdarListener(ServiceListener):
         if int(info.properties[b"uuid"]) != ID:
             friendlyname = name.removesuffix(f".{SERVICE}")
             print(f"Service discovered: {friendlyname}", end="")
-            if check_pair(info):
+            if paired:= check_pair(info):
                 print(" (already paired)")
             else:
                 print()
-                pair(friendlyname, info)
-            address, connection = connect(info)
-            peers[address] = connection
+                paired = pair(friendlyname, info)
+            if paired:
+                address, connection = connect(info)
+                peers[address] = connection
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         pass
