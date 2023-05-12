@@ -7,6 +7,8 @@ from constants import *
 from pairing import *
 from peers import *
 
+this_name = f"{socket.gethostname()}.{SERVICE}"
+
 
 class AdarListener(ServiceListener):
     def add_service(self, zc: Zeroconf, type_: str, name: str) -> None:
@@ -15,20 +17,34 @@ class AdarListener(ServiceListener):
             friendlyname = name.removesuffix(f".{SERVICE}")
             peer = add_peer(info)
             # addresses = info.parsed_addresses()
-            print(f"Service discovered: {friendlyname}", end="")
+            print(f"Service discovered: {info.name}", end="")
             if paired:= check_pair(info):
-                print(" (already paired)")
+                print("\t(already paired)", end="")
             else:
                 print()
                 paired = pair(friendlyname, info)
             if paired:
                 connect(peer, info)
+                print(f"\tkey: {peer.shared_key[:10]}")
+            else:
+                print()
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         pass
 
     def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
-        pass
+        if name == this_name:
+            return
+        print(f"Service disappeared: {name}")
+        index = None
+        for i, p in enumerate(peer_list):
+            if p.service_name == name:
+                index = i
+                break
+        if index != None:
+            if peer_list[index].connection != None:
+                peer_list[index].connection.close()
+            del peer_list[i]
 
 
 def get_local_non_loopback_ipv4_addresses():
@@ -63,7 +79,7 @@ def zeroconf() -> Zeroconf:
     print(f"{hostname} ({ID}): {fqdn} ({ipv4}, {ipv6})")
     adar_info = ServiceInfo(
         SERVICE,
-        name=f"{hostname}.{SERVICE}",
+        name=this_name,
         port=PORT,
         properties=properties,
         server=fqdn,

@@ -9,7 +9,7 @@ from peers import *
 
 
 def add_peer(info: ServiceInfo) -> Peer:
-    peer = Peer(info.get_name(), info.parsed_addresses(IPVersion.V4Only), info.parsed_addresses(IPVersion.V6Only), info.parsed_addresses())
+    peer = Peer(info.name, info.parsed_addresses(IPVersion.V4Only), info.parsed_addresses(IPVersion.V6Only), info.parsed_addresses())
     peer_list.append(peer)
     return peer
 
