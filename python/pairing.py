@@ -61,14 +61,19 @@ def pair(name: str, info: ServiceInfo) -> bool:
 def connect(info: ServiceInfo) -> tuple[str, socket.socket]:
     # fetch address to connect to
     address, mode = check_service(info)
-    print(f"initiating connection to {address}")
+    # print(f"initiating connection to {address}")
     # instantiate a Diffie-Hellman generator
-    generators[address] = DiffieHellman(group=14, key_bits=1024)
+    if address in generators.keys():
+        generator = generators[address]
+    else:
+        generator = DiffieHellman(group=14, key_bits=1024)
+        generators[address] = generator
+    print(generators)
     # initiate connection
     connection = socket.socket(mode, socket.SOCK_STREAM)
     connection.connect((address, PORT))
     # generate a public key to share
-    our_key = generators[address].get_public_key()
+    our_key = generator.get_public_key()
     # send a key request message along with our key
     data = "key?".encode() + base64.b64encode(our_key) + "\n".encode()
     connection.sendall(data)
@@ -76,10 +81,10 @@ def connect(info: ServiceInfo) -> tuple[str, socket.socket]:
     data = connection.recv(len(data))
     other_key = base64.b64decode(data[4:-1])
     # generate the shared key
-    shared_key = generators[address].generate_shared_key(other_key)
-    print(f"computed shared key: {shared_key[:10]}")
+    shared_key = generator.generate_shared_key(other_key)
+    print(f"shared key for sending: {shared_key[:10]}")
     keys[address] = shared_key
-    print(f"connected! {address}")
+    # print(f"connected! {address}")
     return address, connection
 
 

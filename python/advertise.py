@@ -13,8 +13,8 @@ class AdarListener(ServiceListener):
         info = zc.get_service_info(type_, name)
         if int(info.properties[b"uuid"]) != ID:
             friendlyname = name.removesuffix(f".{SERVICE}")
-            addresses = info.parsed_addresses()
-            print(f"Service discovered: {friendlyname} {addresses}", end="")
+            # addresses = info.parsed_addresses()
+            print(f"Service discovered: {friendlyname}", end="")
             if paired:= check_pair(info):
                 print(" (already paired)")
             else:
