@@ -33,17 +33,15 @@ class AdarHandler(socketserver.StreamRequestHandler):
                 generator = generators[self.client_address[0]]
             else:
                 generator = DiffieHellman(group=14, key_bits=1024)
-            other_key = base64.b64decode(self.raw_data[4:-1])
-            shared_key = generator.generate_shared_key(other_key)
-            self.data = "key!".encode() + base64.b64encode(generator.get_public_key()) + "\n".encode()
-            keys[self.client_address[0]] = shared_key
+            public_key = generator.get_public_key()
+            self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
         else:
             print(f"{self.client_address[0]}: {self.data}")
             self.data = bytes(self.data.upper(), "utf-8")
         self.wfile.write(self.data)
 
 
-class dual_stack(socketserver.TCPServer):
+class dual_stack(socketserver.ThreadingTCPServer):
     def server_bind(self) -> None:
         self.socket = socket.create_server(
             self.server_address, family=socket.AF_INET6, dualstack_ipv6=True)

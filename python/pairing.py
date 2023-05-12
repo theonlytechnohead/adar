@@ -63,31 +63,26 @@ def connect(info: ServiceInfo) -> tuple[str, socket.socket]:
     # initiate connection
     connection = socket.socket(mode, socket.SOCK_STREAM)
     connection.connect((address, PORT))
-    print(f"connected")
+    print(f"connecting: {address}")
     # generate a public key to share
     generators[address] = DiffieHellman(group=14, key_bits=1024)
     our_key = generators[address].get_public_key()
-    print(f"generated public key: {our_key}")
+    print(f"generated public key: {our_key[:10]}")
     # send a key request message along with our key
     data = "key?".encode() + base64.b64encode(our_key) + "\n".encode()
     connection.sendall(data)
-    print(f"sent: {data}")
+    print(f"sent: {data[:10]}")
     # length of received data should be 4 + 1024 + 1 = 1029
     data = connection.recv(len(data))
-    print(f"recieved: {data}")
+    print(f"recieved: {data[:10]}")
     other_key = base64.b64decode(data[4:-1])
-    print(f"received other key: {other_key}")
+    print(f"received other key: {other_key[:10]}")
     # generate the shared key
     shared_key = generators[address].generate_shared_key(other_key)
-    print(f"computed shared key: {shared_key}")
-    # if it all checks out, continue the connection
-    # if address in keys.keys() and shared_key == keys[address]:
+    print(f"computed shared key: {shared_key[:10]}")
+    keys[address] = shared_key
     print(f"connected! {address}")
     return address, connection
-    # otherwise, stop the connection (unsecure)
-    print(f"connection didn't work, closing")
-    connection.close()
-    return address, None
 
 
 if __name__ == "__main__":
