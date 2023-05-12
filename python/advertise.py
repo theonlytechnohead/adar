@@ -17,17 +17,14 @@ class AdarListener(ServiceListener):
             friendlyname = name.removesuffix(f".{SERVICE}")
             peer = add_peer(info)
             # addresses = info.parsed_addresses()
-            print(f"Service discovered: {info.name}", end="")
+            print(f"Service discovered: {info.name}")
             if paired:= check_pair(info):
-                print("\t(already paired)", end="")
+                print("\t(already paired)")
             else:
-                print()
                 paired = pair(friendlyname, info)
             if paired:
                 connect(peer, info)
                 print(f"\tkey: {peer.shared_key[:10]}")
-            else:
-                print()
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         pass
