@@ -1,9 +1,5 @@
 from dataclasses import dataclass
 
-peers = {}
-generators = {}
-keys = {}
-
 @dataclass
 class Peer:
     service_name: str
@@ -12,5 +8,6 @@ class Peer:
     addresses: list[str]
     generator = None
     shared_key = bytes()
+    connection = None
 
 peer_list: list[Peer] = []

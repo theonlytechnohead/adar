@@ -37,13 +37,11 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         break
                 sleep(1)
             if peer.generator == None:
-                print(f"creating generator on request")
                 peer.generator = DiffieHellman(group=14, key_bits=1024)
             public_key = peer.generator.get_public_key()
             other_key = base64.b64decode(self.raw_data[4:-1])
-            shared_key = peer.generator.generate_shared_key(other_key)
+            peer.shared_key = peer.generator.generate_shared_key(other_key)
             self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
-            print(f"shared key for receiving: {shared_key[:10]}")
         else:
             print(f"{self.client_address[0]}: {self.data}")
             self.data = bytes(self.data.upper(), "utf-8")
@@ -61,8 +59,9 @@ def handle(signum, frame):
     print("\rStopping...", end="")
     service.close()
     adar.shutdown()
-    for connection in peers.values():
-        connection.close()
+    for peer in peer_list:
+        if peer.connection != None:
+            peer.connection.close()
     if os.name == "posix":
         storage_fuse.destroy()
     if os.name == "nt":

@@ -64,17 +64,9 @@ def pair(name: str, info: ServiceInfo) -> bool:
     return False
 
 
-def connect(info: ServiceInfo) -> tuple[str, socket.socket]:
+def connect(peer: Peer, info: ServiceInfo) -> tuple[str, socket.socket]:
     address, mode = check_service(info)
-    peer: Peer = None
-    for p in peer_list:
-        if p.service_name == info.get_name():
-            peer = p
-            break
-    if peer == None:
-        peer = add_peer(info)
     if peer.generator == None:
-        print(f"creating generator on send")
         peer.generator = DiffieHellman(group=14, key_bits=1024)
     connection = socket.socket(mode, socket.SOCK_STREAM)
     connection.connect((address, PORT))
@@ -83,27 +75,5 @@ def connect(info: ServiceInfo) -> tuple[str, socket.socket]:
     connection.sendall(data)
     data = connection.recv(len(data))
     other_key = base64.b64decode(data[4:-1])
-    shared_key = peer.generator.generate_shared_key(other_key)
-    print(f"shared key for sending: {shared_key[:10]}")
-    keys[address] = shared_key
-    return address, connection
-
-
-if __name__ == "__main__":
-    # automatically generate two key pairs
-    dh1 = DiffieHellman(group=14, key_bits=1024)
-    dh2 = DiffieHellman(group=14, key_bits=1024)
-
-    # get both public keys
-    dh1_public = dh1.get_public_key()
-    dh2_public = dh2.get_public_key()
-
-    # generate shared key based on the other side's public key
-    dh1_shared = dh1.generate_shared_key(dh2_public)
-    dh2_shared = dh2.generate_shared_key(dh1_public)
-
-    # the shared keys should be equal
-    assert dh1_shared == dh2_shared
-
-    print(f"{base64.b64encode(dh1_shared).decode()[:10]}")
-    print(f"{base64.b64encode(dh2_shared).decode()[:10]}")
+    peer.shared_key = peer.generator.generate_shared_key(other_key)
+    peer.connection = connection

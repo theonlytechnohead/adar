@@ -22,8 +22,7 @@ class AdarListener(ServiceListener):
                 print()
                 paired = pair(friendlyname, info)
             if paired:
-                address, connection = connect(info)
-                peers[address] = connection
+                connect(peer, info)
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         pass
