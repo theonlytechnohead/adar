@@ -8,6 +8,12 @@ from constants import PORT
 from peers import *
 
 
+def add_peer(info: ServiceInfo) -> Peer:
+    peer = Peer(info.get_name(), info.parsed_addresses(IPVersion.V4Only), info.parsed_addresses(IPVersion.V6Only), info.parsed_addresses())
+    peer_list.append(peer)
+    return peer
+
+
 def check_service(info: ServiceInfo) -> tuple[str, socket.AddressFamily]:
     v6 = info.parsed_addresses(IPVersion.V6Only)
     for address in v6:
@@ -59,39 +65,34 @@ def pair(name: str, info: ServiceInfo) -> bool:
 
 
 def connect(info: ServiceInfo) -> tuple[str, socket.socket]:
-    # fetch address to connect to
     address, mode = check_service(info)
-    # print(f"initiating connection to {address}")
-    # instantiate a Diffie-Hellman generator
-    if address in generators.keys():
-        generator = generators[address]
-    else:
-        generator = DiffieHellman(group=14, key_bits=1024)
-        generators[address] = generator
-    print(generators)
-    # initiate connection
+    peer: Peer = None
+    for p in peer_list:
+        if p.service_name == info.get_name():
+            peer = p
+            break
+    if peer == None:
+        peer = add_peer(info)
+    if peer.generator == None:
+        print(f"creating generator on send")
+        peer.generator = DiffieHellman(group=14, key_bits=1024)
     connection = socket.socket(mode, socket.SOCK_STREAM)
     connection.connect((address, PORT))
-    # generate a public key to share
-    our_key = generator.get_public_key()
-    # send a key request message along with our key
+    our_key = peer.generator.get_public_key()
     data = "key?".encode() + base64.b64encode(our_key) + "\n".encode()
     connection.sendall(data)
-    # length of received data should be 4 + 1024 + 1 = 1029
     data = connection.recv(len(data))
     other_key = base64.b64decode(data[4:-1])
-    # generate the shared key
-    shared_key = generator.generate_shared_key(other_key)
+    shared_key = peer.generator.generate_shared_key(other_key)
     print(f"shared key for sending: {shared_key[:10]}")
     keys[address] = shared_key
-    # print(f"connected! {address}")
     return address, connection
 
 
 if __name__ == "__main__":
     # automatically generate two key pairs
-    dh1 = DiffieHellman(group=14, key_bits=540)
-    dh2 = DiffieHellman(group=14, key_bits=540)
+    dh1 = DiffieHellman(group=14, key_bits=1024)
+    dh2 = DiffieHellman(group=14, key_bits=1024)
 
     # get both public keys
     dh1_public = dh1.get_public_key()
@@ -104,5 +105,5 @@ if __name__ == "__main__":
     # the shared keys should be equal
     assert dh1_shared == dh2_shared
 
-    print(f"{base64.b64encode(dh1_shared).decode()}")
-    print(f"{base64.b64encode(dh2_shared).decode()}")
+    print(f"{base64.b64encode(dh1_shared).decode()[:10]}")
+    print(f"{base64.b64encode(dh2_shared).decode()[:10]}")

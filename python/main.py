@@ -29,14 +29,16 @@ class AdarHandler(socketserver.StreamRequestHandler):
         if self.data == "pair?":
             self.data = b"sure"
         elif self.data.startswith("key?"):
-            if self.client_address[0] in generators.keys():
-                generator = generators[self.client_address[0]]
-            else:
-                generator = DiffieHellman(group=14, key_bits=1024)
-                generators[self.client_address[0]] = generator
-            public_key = generator.get_public_key()
+            peer: Peer = None
+            for p in peer_list:
+                if self.client_address[0] in p.addresses:
+                    peer = p
+            if peer.generator == None:
+                print(f"creating generator on request")
+                peer.generator = DiffieHellman(group=14, key_bits=1024)
+            public_key = peer.generator.get_public_key()
             other_key = base64.b64decode(self.raw_data[4:-1])
-            shared_key = generator.generate_shared_key(other_key)
+            shared_key = peer.generator.generate_shared_key(other_key)
             self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
             print(f"shared key for receiving: {shared_key[:10]}")
         else:
