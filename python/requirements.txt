@@ -3,5 +3,6 @@ fusepy; os_name == "posix"
 ipaddress
 netifaces
 py-diffie-hellman
+py-machineid
 zeroconf
 zfex

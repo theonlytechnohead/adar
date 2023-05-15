@@ -1,5 +1,5 @@
-from uuid import getnode
+import machineid
 
-ID = getnode()
+ID = machineid.id()
 PORT = 6780
 SERVICE = "_adar._tcp.local."

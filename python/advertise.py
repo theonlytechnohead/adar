@@ -13,7 +13,7 @@ this_name = f"{socket.gethostname()}.{SERVICE}"
 class AdarListener(ServiceListener):
     def add_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         info = zc.get_service_info(type_, name)
-        if int(info.properties[b"uuid"]) != ID:
+        if info.properties[b"uuid"].decode() != ID:
             friendlyname = name.removesuffix(f".{SERVICE}")
             peer = add_peer(info)
             # addresses = info.parsed_addresses()
