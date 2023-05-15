@@ -73,7 +73,7 @@ def zeroconf() -> Zeroconf:
     hostname = socket.gethostname()
     ipv4 = list(get_local_non_loopback_ipv4_addresses())
     ipv6 = list(get_local_non_loopback_ipv6_addresses())
-    print(f"{hostname} ({ID}): {fqdn} ({ipv4}, {ipv6})")
+    print(f"{hostname}@{fqdn} ({ID}))")
     adar_info = ServiceInfo(
         SERVICE,
         name=this_name,
