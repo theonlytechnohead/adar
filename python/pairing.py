@@ -9,7 +9,8 @@ from peers import *
 
 
 def add_peer(info: ServiceInfo) -> Peer:
-    peer = Peer(info.name, info.parsed_addresses(IPVersion.V4Only), info.parsed_addresses(IPVersion.V6Only), info.parsed_addresses())
+    peer = Peer(info.name, info.server, info.parsed_addresses(
+        IPVersion.V4Only), info.parsed_addresses(IPVersion.V6Only), info.parsed_addresses())
     peer_list.append(peer)
     return peer
 
@@ -65,11 +66,15 @@ def pair(name: str, info: ServiceInfo) -> bool:
 
 
 def connect(peer: Peer, info: ServiceInfo) -> tuple[str, socket.socket]:
-    address, mode = check_service(info)
     if peer.generator == None:
         peer.generator = DiffieHellman(group=14, key_bits=1024)
-    connection = socket.socket(mode, socket.SOCK_STREAM)
-    connection.connect((address, PORT))
+    print(f"\tconnecting to {peer.fqdn}")
+    connection = socket.create_connection((peer.fqdn, PORT))
+    print(f"\tconnected to {connection.getpeername()[0]}")
+    if connection.getpeername()[0] not in peer.addresses:
+        connection.shutdown(socket.SHUT_RDWR)
+        connection.close()
+        return
     our_key = peer.generator.get_public_key()
     data = "key?".encode() + base64.b64encode(our_key) + "\n".encode()
     connection.sendall(data)

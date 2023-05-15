@@ -10,6 +10,7 @@ from peers import *
 
 stop = False
 
+
 class AdarHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
         self.raw_data = self.rfile.readline(2048)
