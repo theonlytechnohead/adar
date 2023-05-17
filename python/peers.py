@@ -5,6 +5,7 @@ from dataclasses import dataclass
 class Peer:
     service_name: str
     fqdn: str
+    uuid: str
     ipv4_addresses: list[str]
     ipv6_addresses: list[str]
     addresses: list[str]

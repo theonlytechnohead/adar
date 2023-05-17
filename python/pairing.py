@@ -9,8 +9,14 @@ from peers import *
 
 
 def add_peer(info: ServiceInfo) -> Peer:
-    peer = Peer(info.name, info.server, info.parsed_addresses(
-        IPVersion.V4Only), info.parsed_addresses(IPVersion.V6Only), info.parsed_addresses())
+    peer = Peer(
+        info.name,
+        info.server,
+        info.properties[b"uuid"].decode(),
+        info.parsed_addresses(IPVersion.V4Only),
+        info.parsed_addresses(IPVersion.V6Only),
+        info.parsed_addresses()
+        )
     peer_list.append(peer)
     return peer
 
@@ -26,46 +32,42 @@ def check_service(info: ServiceInfo) -> tuple[str, socket.AddressFamily]:
             return address, socket.AF_INET
 
 
-def check_pair(info: ServiceInfo) -> bool:
+def check_pair(peer: Peer) -> bool:
     if os.path.exists("pairings"):
-        id = str(info.properties[b"uuid"], "utf-8")
         with open("pairings") as file:
             for line in file.readlines():
-                if id in line:
+                if peer.uuid in line:
                     return True
     return False
 
 
-def request_pair(info: ServiceInfo) -> bool:
+def request_pair(peer: Peer) -> bool:
     accepted = False
-    address, mode = check_service(info)
-    with socket.socket(mode, socket.SOCK_STREAM) as sock:
-        sock.connect((address, PORT))
+    with socket.create_connection((peer.fqdn, PORT)) as sock:
         sock.sendall(bytes("pair?" + "\n", "utf-8"))
         received = str(sock.recv(1024), "utf-8")
         accepted = True if received == "sure" else False
     return accepted
 
 
-def store_pair(info: ServiceInfo):
+def store_pair(peer: Peer):
     with open("pairings", "a") as file:
-        id = str(info.properties[b"uuid"], "utf-8")
-        file.write(f"{id}\n")
+        file.write(f"{peer.uuid}\n")
 
 
-def pair(name: str, info: ServiceInfo) -> bool:
+def pair(name: str, peer: Peer) -> bool:
     confirm = input(f"Do you want to pair with {name}? [Y/n] ")
     if confirm.lower() == "y" or confirm == "":
-        if request_pair(info):
+        if request_pair(peer):
             print("Pairing accepted")
-            store_pair(info)
+            store_pair(peer)
             return True
         else:
             print("Pairing failed")
     return False
 
 
-def connect(peer: Peer, info: ServiceInfo) -> tuple[str, socket.socket]:
+def connect(peer: Peer) -> tuple[str, socket.socket]:
     if peer.generator == None:
         peer.generator = DiffieHellman(group=14, key_bits=1024)
     print(f"\tconnecting to {peer.fqdn}")
