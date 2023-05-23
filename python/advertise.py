@@ -23,7 +23,8 @@ class AdarListener(ServiceListener):
                 paired = pair(friendlyname, peer)
             if paired:
                 connect(peer)
-                print(f"\tkey: {peer.shared_key[:10]}")
+                short_key = "-".join(f"{int(bit):03d}" for bit in peer.shared_key[:2])
+                print(f"\tkey: {short_key}")
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         pass
@@ -72,7 +73,7 @@ def zeroconf() -> Zeroconf:
     hostname = socket.gethostname()
     ipv4 = list(get_local_non_loopback_ipv4_addresses())
     ipv6 = list(get_local_non_loopback_ipv6_addresses())
-    print(f"{hostname}@{fqdn} ({ID}))")
+    print(f"{hostname}@{fqdn} ({ID})")
     adar_info = ServiceInfo(
         SERVICE,
         name=this_name,

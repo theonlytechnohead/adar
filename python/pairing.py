@@ -50,9 +50,12 @@ def request_pair(peer: Peer) -> bool:
     return accepted
 
 
-def store_pair(peer: Peer):
+def store_peer(peer: Peer):
     with open("pairings", "a") as file:
-        file.write(f"{peer.uuid}\n")
+        file.write(f"{peer.uuid}")
+        if peer.shared_key != b"":
+            file.write(f":{base64.b64encode(peer.shared_key)}")
+        file.write("\n")
 
 
 def pair(name: str, peer: Peer) -> bool:
@@ -60,7 +63,7 @@ def pair(name: str, peer: Peer) -> bool:
     if confirm.lower() == "y" or confirm == "":
         if request_pair(peer):
             print("Pairing accepted")
-            store_pair(peer)
+            store_peer(peer)
             return True
         else:
             print("Pairing failed")
@@ -84,3 +87,4 @@ def connect(peer: Peer) -> tuple[str, socket.socket]:
     other_key = base64.b64decode(data[4:-1])
     peer.shared_key = peer.generator.generate_shared_key(other_key)
     peer.connection = connection
+    store_peer(peer)
