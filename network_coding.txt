@@ -1,0 +1,4 @@
+when reading a file over the network, there is a constant stream of data
+each byte / packet will be transformed using RLNC and transmitted using UDP
+the requestee will continue to consume packets until the requested data can be fully decoded
+	dropped packets do not add delay / hitch to the file data stream as further RLNC packets will fill in the gaps
