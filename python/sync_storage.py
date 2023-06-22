@@ -33,6 +33,7 @@ def thread(function):
 
 @thread
 def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload = None, **kwargs):
+	if DEBUG: print(f"sending {command} to {peer.service_name}")
 	output = "".encode()
 	match command:
 		case Command.CREATE:
@@ -48,6 +49,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 			output = f"{Command.WRITE}:{path}{SEP}{start}{SEP}{length}{SEP}{payload}".encode()
 		case Command.REMOVE:
 			output = f"{Command.REMOVE}:{path}\n".encode()
+	if DEBUG: print(output)
 	peer.connection.sendall(output)
 	if command == Command.READ:
 		pass

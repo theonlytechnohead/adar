@@ -49,7 +49,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
         self.wfile.write(self.data)
 
 
-class dual_stack(socketserver.ThreadingTCPServer):
+class dual_stack(socketserver.ThreadingUDPServer):
     def server_bind(self) -> None:
         self.socket = socket.create_server(
             self.server_address, family=socket.AF_INET6, dualstack_ipv6=True)
