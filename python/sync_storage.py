@@ -92,3 +92,11 @@ def remove(path: str):
 	if DEBUG: print(f"removing {path}")
 	for peer in peer_list:
 		transmit(peer, Command.REMOVE, path)
+
+
+@thread
+def listen(peer: Peer):
+	if DEBUG: print(f"listening to: {peer.service_name}")
+	while True:
+		received = peer.connection.recv()
+		if DEBUG: print(f"received: {received.decode()}")
