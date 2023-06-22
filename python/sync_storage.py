@@ -3,6 +3,7 @@ import pathlib
 import threading
 
 from enum import Enum, auto
+from constants import *
 from peers import *
 from time import sleep
 
@@ -50,7 +51,8 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 		case Command.REMOVE:
 			output = f"{Command.REMOVE}:{path}\n".encode()
 	if DEBUG: print(output)
-	peer.connection.sendall(output)
+	with socket.create_connection((peer.fqdn, PORT)) as connection:
+		connection.sendall(output)
 	if command == Command.READ:
 		pass
 

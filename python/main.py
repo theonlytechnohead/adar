@@ -49,7 +49,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
         self.wfile.write(self.data)
 
 
-class dual_stack(socketserver.ThreadingUDPServer):
+class dual_stack(socketserver.ThreadingTCPServer):
     def server_bind(self) -> None:
         self.socket = socket.create_server(
             self.server_address, family=socket.AF_INET6, dualstack_ipv6=True)
@@ -60,9 +60,6 @@ def handle(signum, frame):
     print("\rStopping...", end="")
     service.close()
     adar.shutdown()
-    for peer in peer_list:
-        if peer.connection != None:
-            peer.connection.close()
     if os.name == "posix":
         storage_fuse.destroy()
     if os.name == "nt":
