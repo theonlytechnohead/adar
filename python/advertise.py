@@ -39,9 +39,7 @@ class AdarListener(ServiceListener):
                 index = i
                 break
         if index != None:
-            if peer_list[index].connection != None:
-                peer_list[index].connection.close()
-            del peer_list[i]
+            del peer_list[index]
 
 
 def get_local_non_loopback_ipv4_addresses():
