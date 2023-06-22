@@ -24,6 +24,10 @@ def treat_path(path: str) -> pathlib.PurePosixPath:
 	return "/" / pathlib.PurePosixPath(path.replace("\\", "/"))
 
 
+def untreat_path(path: str) -> pathlib.PurePath:
+	return MOUNT_POINT / pathlib.PurePath(path.replace("/", os.sep))
+
+
 def thread(function):
     def run(*args, **kwargs):
         t = threading.Thread(target=function, args=args, kwargs=kwargs)
@@ -97,9 +101,39 @@ def remove(path: str):
 
 
 def create_local(path: str, directory: bool):
-	path = os.path.join(MOUNT_POINT, path.removeprefix("/").replace("/", "\\"))
-	if DEBUG: print(f"creating {path} ({'folder' if directory else 'file'})")
+	path = untreat_path(path)
+	if DEBUG: print(f"creating local {path} ({'folder' if directory else 'file'})")
 	if directory:
 		os.mkdir(path)
 	else:
 		open(path, "x").close()
+
+
+def read_local(path: str, start: int, length: int) -> bytes:
+	path = untreat_path(path)
+	if DEBUG: print(f"reading local {path} ({start}->{start+length})")
+	pass
+
+
+def rename_local(path: str, new_path: str):
+	path = untreat_path(path)
+	new_path = untreat_path(new_path)
+	if DEBUG: print(f"renaming local {path} -> {new_path}")
+	os.rename(path, new_path)
+
+
+def write_local(path: str, start: int, length: int, data: bytes):
+	path = untreat_path(path)
+	if DEBUG: print(f"writing local: {path} ({start}->{start+length}: {data})")
+	with open(path, "wb") as file:
+		file.seek(start)
+		file.write(data)
+
+
+def remove_local(path: str):
+	path = untreat_path(path)
+	if DEBUG: print(f"removing local: {path}")
+	if path.is_dir():
+		shutil.rmtree(path)
+	else:
+		os.remove(path)
