@@ -5,6 +5,7 @@ import threading
 from enum import Enum, auto
 from peers import *
 
+SEP = "\x1f"
 
 DEBUG = True
 
@@ -30,23 +31,23 @@ def thread(function):
 
 
 @thread
-def transmit(peer: Peer, command: Command, path: str, payload = None, **kwargs):
+def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload = None, **kwargs):
 	output = "".encode()
 	match command:
 		case Command.CREATE:
 			directory = kwargs["directory"]
-			pass
+			output = f"{Command.CREATE}:{path}{SEP}{directory}".encode()
 		case Command.READ:
 			length = kwargs["length"]
-			pass
+			output = f"{Command.READ}:{path}{SEP}{payload}{SEP}{length}".encode()
 		case Command.RENAME:
-			pass
+			output = f"{Command.RENAME}:{path}{SEP}{payload}".encode()
 		case Command.WRITE:
 			start = kwargs["start"]
 			length = kwargs["length"]
-			pass
+			output = f"{Command.WRITE}:{path}{SEP}{start}{SEP}{length}{SEP}{payload}".encode()
 		case Command.REMOVE:
-			pass
+			output = f"{Command.REMOVE}:{path}".encode()
 	peer.connection.sendall(output)
 	if command == Command.READ:
 		return peer.connection.recv()
