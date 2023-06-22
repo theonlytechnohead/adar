@@ -6,6 +6,7 @@ import sys
 import fec
 import filetimes
 import ProjectedFS
+import sync_storage
 from peers import *
 
 DEBUG = False
@@ -118,6 +119,8 @@ def write_file(path):
             written += 2
     for file in files:
         file.close()
+    with open(mount_path, "rb") as file:
+        sync_storage.write(path, 0, file.read())
 
 
 @ProjectedFS.PRJ_GET_DIRECTORY_ENUMERATION_CB
@@ -184,6 +187,7 @@ def get_file_data(callbackData, byteOffset, length):
             return E_INVALIDARG
         contents = read_file(
             callbackData.contents.FilePathName, byteOffset, length)
+        sync_storage.read(callbackData.contents.FilePathName, byteOffset, length)
         writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(
             callbackData.contents.NamespaceVirtualizationContext, length)
         if not writeBuffer:
@@ -211,6 +215,7 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
                     os.mkdir(path)
                 else:
                     open(path, "x").close()
+            sync_storage.create(callbackData.contents.FilePathName, isDirectory)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_RENAMED:
             if DEBUG:
                 print(
@@ -219,6 +224,7 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
                 path = os.path.join(root, callbackData.contents.FilePathName)
                 new_path = os.path.join(root, destinationFileName)
                 os.rename(path, new_path)
+            sync_storage.rename(callbackData.contents.FilePathName, destinationFileName)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_MODIFIED:
             if DEBUG:
                 print(
@@ -236,6 +242,7 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
                     shutil.rmtree(path)
                 else:
                     os.remove(path)
+            sync_storage.remove(callbackData.contents.FilePathName)
     return S_OK
 
 
