@@ -45,6 +45,10 @@ class AdarHandler(socketserver.StreamRequestHandler):
             self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
         else:
             print(f"{self.client_address[0]}: {self.data}")
+            if self.data.startswith(str(sync_storage.Command.CREATE)):
+                arguments = self.data.strip().split(":")[1]
+                path, directory = arguments.split(sync_storage.SEP)
+                sync_storage.create_local(path, directory == "1")
             self.data = bytes(self.data.upper(), "utf-8")
         self.wfile.write(self.data)
 

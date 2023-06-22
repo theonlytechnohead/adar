@@ -1,11 +1,11 @@
-
+import os
 import pathlib
+import shutil
 import threading
 
 from enum import Enum, auto
 from constants import *
 from peers import *
-from time import sleep
 
 SEP = "\x1f"
 
@@ -94,3 +94,12 @@ def remove(path: str):
 	if DEBUG: print(f"removing {path}")
 	for peer in peer_list:
 		transmit(peer, Command.REMOVE, path)
+
+
+def create_local(path: str, directory: bool):
+	path = os.path.join(MOUNT_POINT, path.removeprefix("/").replace("/", "\\"))
+	if DEBUG: print(f"creating {path} ({'folder' if directory else 'file'})")
+	if directory:
+		os.mkdir(path)
+	else:
+		open(path, "x").close()

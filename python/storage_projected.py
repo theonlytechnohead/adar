@@ -7,13 +7,13 @@ import fec
 import filetimes
 import ProjectedFS
 import sync_storage
+from constants import *
 from peers import *
 
 DEBUG = False
 
 ROOT_POINT = ".root"
 ROOT_POINTS = (ROOT_POINT + "0", ROOT_POINT + "1")
-MOUNT_POINT = "mount"
 FILE_ATTRIBUTE_HIDDEN = 0x02
 
 # HRESULT
