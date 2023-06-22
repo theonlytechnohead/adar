@@ -21,11 +21,11 @@ class Command(Enum):
 
 
 def treat_path(path: str) -> pathlib.PurePosixPath:
-	return "/" / pathlib.PurePosixPath(path.replace("\\", "/"))
+	return pathlib.PurePosixPath("/", path.replace("\\", "/"))
 
 
-def untreat_path(path: str) -> pathlib.PurePath:
-	return MOUNT_POINT / pathlib.PurePath(path.replace("/", os.sep))
+def untreat_path(path: str) -> pathlib.Path:
+	return pathlib.Path(MOUNT_POINT, path.removeprefix("/").replace("/", os.sep))
 
 
 def thread(function):
@@ -50,7 +50,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 		case Command.WRITE:
 			start = kwargs["start"]
 			length = kwargs["length"]
-			output = f"{Command.WRITE}:{path}{SEP}{start}{SEP}{length}{SEP}{payload}\n".encode()
+			output = f"{Command.WRITE}:{path}{SEP}{start}{SEP}{length}{SEP}{payload.decode()}\n".encode()
 		case Command.REMOVE:
 			output = f"{Command.REMOVE}:{path}\n".encode()
 	with socket.create_connection((peer.fqdn, PORT)) as connection:

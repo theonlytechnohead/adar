@@ -59,8 +59,9 @@ class AdarHandler(socketserver.StreamRequestHandler):
                 sync_storage.rename_local(path, new_path)
             if self.data.startswith(str(sync_storage.Command.WRITE)):
                 arguments = self.data.strip().split(":")[1]
-                path, start, length, data = arguments.split(sync_storage.SEP)
-                sync_storage.write_local(path, int(start), int(length), data.encode())
+                path, start, length, _ = arguments.split(sync_storage.SEP)
+                _, _, _, data = self.raw_data.split(sync_storage.SEP.encode())
+                sync_storage.write_local(path, int(start), int(length), data)
             if self.data.startswith(str(sync_storage.Command.REMOVE)):
                 arguments = self.data.strip().split(":")[1]
                 path = arguments
