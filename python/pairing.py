@@ -89,4 +89,3 @@ def connect(peer: Peer) -> tuple[str, socket.socket]:
     peer.shared_key = peer.generator.generate_shared_key(other_key)
     peer.connection = connection
     store_peer(peer)
-    sync_storage.listen(peer)

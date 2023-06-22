@@ -4,6 +4,7 @@ import threading
 
 from enum import Enum, auto
 from peers import *
+from time import sleep
 
 SEP = "\x1f"
 
@@ -35,22 +36,21 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 	output = "".encode()
 	match command:
 		case Command.CREATE:
-			directory = kwargs["directory"]
-			output = f"{Command.CREATE}:{path}{SEP}{directory}".encode()
+			output = f"{Command.CREATE}:{path}{SEP}{payload}\n".encode()
 		case Command.READ:
 			length = kwargs["length"]
-			output = f"{Command.READ}:{path}{SEP}{payload}{SEP}{length}".encode()
+			output = f"{Command.READ}:{path}{SEP}{payload}{SEP}{length}\n".encode()
 		case Command.RENAME:
-			output = f"{Command.RENAME}:{path}{SEP}{payload}".encode()
+			output = f"{Command.RENAME}:{path}{SEP}{payload}\n".encode()
 		case Command.WRITE:
 			start = kwargs["start"]
 			length = kwargs["length"]
 			output = f"{Command.WRITE}:{path}{SEP}{start}{SEP}{length}{SEP}{payload}".encode()
 		case Command.REMOVE:
-			output = f"{Command.REMOVE}:{path}".encode()
+			output = f"{Command.REMOVE}:{path}\n".encode()
 	peer.connection.sendall(output)
 	if command == Command.READ:
-		return peer.connection.recv()
+		pass
 
 
 def create(path: str, directory: bool):
@@ -92,11 +92,3 @@ def remove(path: str):
 	if DEBUG: print(f"removing {path}")
 	for peer in peer_list:
 		transmit(peer, Command.REMOVE, path)
-
-
-@thread
-def listen(peer: Peer):
-	if DEBUG: print(f"listening to: {peer.service_name}")
-	while True:
-		received = peer.connection.recv()
-		if DEBUG: print(f"received: {received.decode()}")
