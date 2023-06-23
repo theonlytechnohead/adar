@@ -24,8 +24,7 @@ To build/run the project:
 1. Install `simplenc`
 
 ```sh
-~/adar $ cd python
-~/adar/python $ cd simplenc
+~/adar $ cd python/simple_nc-main
 ~/adar/python/simple_nc-main $ pip install .
 ```
 
@@ -36,18 +35,17 @@ To build/run the project:
 ~/adar/python $ pip install -r requirements.txt
 ```
 
-Enable `Windows Projected File System` in `Turn Windows features on or off`
+For Unix systems (GNU+Linux, macOS), ensure that FUSE is working, e.g. with the `libfuse` library
+
+For Windows systems, enable `Windows Projected File System` in `Turn Windows features on or off`
 
 3. Run the program
 
 ```sh
 ~/adar $ cd python
-~/adar/python $ python main.py
+~/adar/python $ python3 main.py
 ```
 
-4. Test with the client
+The `mount` directory will present itself for file storage
 
-```sh
-~/adar $ cd python
-~/adar/python $ python client.py Hello, world!
-```
+You can run `adar` on additional computers to pair and connect to them, which will allow the storage to be distributed
