@@ -3,6 +3,8 @@ import pathlib
 import shutil
 import threading
 
+import storage_backing
+
 from enum import Enum, auto
 from constants import *
 from peers import *
@@ -24,8 +26,8 @@ def treat_path(path: str) -> pathlib.PurePosixPath:
 	return pathlib.PurePosixPath("/", path.replace("\\", "/"))
 
 
-def untreat_path(path: str) -> pathlib.Path:
-	return pathlib.Path(MOUNT_POINT, path.removeprefix("/").replace("/", os.sep))
+def untreat_path(path: str, mount = True) -> pathlib.Path:
+	return pathlib.Path(MOUNT_POINT if mount else "", path.removeprefix("/").replace("/", os.sep))
 
 
 def thread(function):
@@ -101,39 +103,30 @@ def remove(path: str):
 
 
 def create_local(path: str, directory: bool):
-	path = untreat_path(path)
 	if DEBUG: print(f"creating local {path} ({'folder' if directory else 'file'})")
-	if directory:
-		os.mkdir(path)
-	else:
-		open(path, "x").close()
+	storage_backing.create(untreat_path(path, False), directory)
 
 
 def read_local(path: str, start: int, length: int) -> bytes:
-	path = untreat_path(path)
 	if DEBUG: print(f"reading local {path} ({start}->{start+length})")
-	pass
+	return storage_backing.read(untreat_path(path, False), start, length)
 
 
 def rename_local(path: str, new_path: str):
-	path = untreat_path(path)
-	new_path = untreat_path(new_path)
 	if DEBUG: print(f"renaming local {path} -> {new_path}")
-	os.rename(path, new_path)
+	storage_backing.rename(untreat_path(path, False), untreat_path(new_path, False))
 
 
 def write_local(path: str, start: int, length: int, data: bytes):
-	path = untreat_path(path)
 	if DEBUG: print(f"writing local: {path} ({start}->{start+length}: {data})")
+	storage_backing.write(untreat_path(path, False), start, length, data)
+	path = untreat_path(path)
 	with open(path, "wb") as file:
 		file.seek(start)
 		file.write(data)
 
 
 def remove_local(path: str):
-	path = untreat_path(path)
 	if DEBUG: print(f"removing local: {path}")
-	if path.is_dir():
-		shutil.rmtree(path)
-	else:
-		os.remove(path)
+	backing_path = untreat_path(path, False)
+	storage_backing.remove(backing_path)	

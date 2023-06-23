@@ -7,13 +7,12 @@ import fec
 import filetimes
 import ProjectedFS
 import sync_storage
+import storage_backing
 from constants import *
 from peers import *
 
 DEBUG = False
 
-ROOT_POINT = ".root"
-ROOT_POINTS = (ROOT_POINT + "0", ROOT_POINT + "1")
 FILE_ATTRIBUTE_HIDDEN = 0x02
 
 # HRESULT
@@ -209,21 +208,13 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
         case ProjectedFS.PRJ_NOTIFICATION_NEW_FILE_CREATED:
             if DEBUG:
                 print(f"created: {callbackData.contents.FilePathName}")
-            for root in ROOT_POINTS:
-                path = os.path.join(root, callbackData.contents.FilePathName)
-                if isDirectory:
-                    os.mkdir(path)
-                else:
-                    open(path, "x").close()
+            storage_backing.create(callbackData.contents.FilePathName, isDirectory)
             sync_storage.create(callbackData.contents.FilePathName, isDirectory)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_RENAMED:
             if DEBUG:
                 print(
                     f"renamed: {callbackData.contents.FilePathName} -> {destinationFileName}")
-            for root in ROOT_POINTS:
-                path = os.path.join(root, callbackData.contents.FilePathName)
-                new_path = os.path.join(root, destinationFileName)
-                os.rename(path, new_path)
+            storage_backing.rename(callbackData.contents.FilePathName, destinationFileName)
             sync_storage.rename(callbackData.contents.FilePathName, destinationFileName)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_MODIFIED:
             if DEBUG:
@@ -236,12 +227,7 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
         case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_DELETED:
             if DEBUG:
                 print(f"deleted: {callbackData.contents.FilePathName}")
-            for root in ROOT_POINTS:
-                path = os.path.join(root, callbackData.contents.FilePathName)
-                if isDirectory:
-                    shutil.rmtree(path)
-                else:
-                    os.remove(path)
+            storage_backing.remove(callbackData.contents.FilePathName)
             sync_storage.remove(callbackData.contents.FilePathName)
     return S_OK
 
