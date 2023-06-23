@@ -138,8 +138,7 @@ class Storage(Operations):
         return os.fsync(fh)
 
     def release(self, path, fh):
-        # TODO: when can I remove references to file handles? 'cuz it ain't here!
-        # del self.handles[fh]
+        del self.handles[fh]
         return os.close(fh)
 
     def fsync(self, path, fdatasync, fh):
