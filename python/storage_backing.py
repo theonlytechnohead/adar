@@ -5,9 +5,13 @@ import fec
 
 from constants import *
 
-def create(path: str, directory: bool):
+def create(path: str, directory: bool, **kwargs):
 	if os.name == "posix":
-		print(path)
+		mode = kwargs["mode"]
+		if directory:
+			return os.mkdir(path, mode)
+		else:
+			return os.open(path, os.O_WRONLY | os.O_CREAT, mode)
 	if os.name == "nt":
 		for root in ROOT_POINTS:
 			root_path = os.path.join(root, path)
@@ -17,10 +21,11 @@ def create(path: str, directory: bool):
 				open(root_path, "x").close()
 
 
-def read_file(path: str, start: int, length: int) -> bytes:
+def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 	if os.name == "posix":
-		# TODO
-		pass
+		handle = kwargs["handle"]
+		os.lseek(handle, start, os.SEEK_SET)
+		return os.read(handle, length)
 	if os.name == "nt":
 		output = bytearray(length)
 		read = 0
@@ -51,18 +56,23 @@ def read_file(path: str, start: int, length: int) -> bytes:
 
 
 def rename(path: str, new_path: str):
-	for root in ROOT_POINTS:
-		root_path = os.path.join(root, path)
-		root_new_path = os.path.join(root, new_path)
-		os.rename(root_path, root_new_path)
-
-
-def write(path: str, real_path: str, start: int, length: int, data: bytes):
 	if os.name == "posix":
-		# TODO
-		pass
+		return os.rename(path, new_path)
+	if os.name == "nt":
+		for root in ROOT_POINTS:
+			root_path = os.path.join(root, path)
+			root_new_path = os.path.join(root, new_path)
+			os.rename(root_path, root_new_path)
+
+
+def write(path: str, start: int, length: int, data: bytes, **kwargs):
+	if os.name == "posix":
+		handle = kwargs["handle"]
+		os.lseek(handle, start, os.SEEK_SET)
+		return os.write(handle, data)
 	if os.name == "nt":
 		# TODO: is this really necessary? it seems to help by fixing the file size and doing placeholdery stuff that hints the OS what's happened
+		real_path = kwargs["real_path"]
 		with open(real_path, "wb") as file:
 			file.seek(start)
 			file.write(data)
@@ -90,8 +100,10 @@ def write(path: str, real_path: str, start: int, length: int, data: bytes):
 
 def remove(path: str):
 	if os.name == "posix":
-		# TODO
-		pass
+		if os.path.isdir(path):
+			return os.rmdir(path)
+		else:
+			return os.unlink(path)
 	if os.name == "nt":
 		# TODO: figure out why directories are sticky (sometimes?)
 		for root in ROOT_POINTS:

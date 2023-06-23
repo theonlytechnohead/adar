@@ -214,7 +214,7 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
             size = os.stat(mount_path).st_size
             with open(mount_path, "rb") as file:
                 data = file.read()
-                storage_backing.write(callbackData.contents.FilePathName, mount_path, 0, size, data)
+                storage_backing.write(callbackData.contents.FilePathName, 0, size, data, real_path=mount_path)
                 storage_sync.write(callbackData.contents.FilePathName, 0, data)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_DELETED:
             if DEBUG:

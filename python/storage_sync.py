@@ -119,7 +119,7 @@ def rename_local(path: str, new_path: str):
 
 def write_local(path: str, start: int, length: int, data: bytes):
 	if DEBUG: print(f"writing local: {path} ({start}->{start+length}): {data}")
-	storage_backing.write(ntop(path, False), ntop(path), start, length, data)
+	storage_backing.write(ntop(path, False), start, length, data, real_path=ntop(path))
 
 
 def remove_local(path: str):

@@ -14,6 +14,7 @@ from peers import *
 class Storage(Operations):
     def __init__(self, root):
         self.root = root
+        self.handles: dict[int, str] = {}
 
     # Helpers
     # =======
@@ -68,11 +69,11 @@ class Storage(Operations):
 
     def rmdir(self, path):
         root_path = self._root_path(path)
-        return os.rmdir(root_path)
+        return storage_backing.remove(root_path)
 
     def mkdir(self, path, mode):
-        storage_backing.create(self._root_path(path), True)
-        return os.mkdir(self._root_path(path), mode)
+        root_path = self._root_path(path)
+        return storage_backing.create(root_path, True, mode=mode)
 
     def statfs(self, path):
         root_path = self._root_path(path)
@@ -82,13 +83,16 @@ class Storage(Operations):
             'f_frsize', 'f_namemax'))
 
     def unlink(self, path):
-        return os.unlink(self._root_path(path))
+        root_path = self._root_path(path)
+        return storage_backing.remove(root_path)
 
     def symlink(self, name, target):
         return os.symlink(name, self._root_path(target))
 
     def rename(self, old, new):
-        return os.rename(self._root_path(old), self._root_path(new))
+        root_old = self._root_path(old)
+        root_new = self._root_path(new)
+        return storage_backing.rename(root_old, root_new)
 
     def link(self, target, name):
         return os.link(self._root_path(target), self._root_path(name))
@@ -101,19 +105,27 @@ class Storage(Operations):
 
     def open(self, path, flags):
         root_path = self._root_path(path)
-        return os.open(root_path, flags)
+        handle = os.open(root_path, flags)
+        if path in self.handles.keys():
+            self.handles[handle].append(path)
+        else:
+            self.handles[handle] = path
+        print(f"opening {handle} ({path}): {list(self.handles.keys())}")
+        return handle
 
     def create(self, path, mode, fi=None):
         root_path = self._root_path(path)
-        return os.open(root_path, os.O_WRONLY | os.O_CREAT, mode)
+        return storage_backing.create(root_path, False, mode=mode)
 
     def read(self, path, length, offset, fh):
-        os.lseek(fh, offset, os.SEEK_SET)
-        return os.read(fh, length)
+        file_path = self.handles[fh]
+        root_path = self._root_path(file_path)
+        return storage_backing.read_file(root_path, offset, length, handle=fh)
 
     def write(self, path, buf, offset, fh):
-        os.lseek(fh, offset, os.SEEK_SET)
-        return os.write(fh, buf)
+        file_path = self.handles[fh]
+        root_path = self._root_path(file_path)
+        return storage_backing.write(root_path, offset, len(buf), buf, handle=fh)
 
     def truncate(self, path, length, fh=None):
         root_path = self._root_path(path)
@@ -124,6 +136,9 @@ class Storage(Operations):
         return os.fsync(fh)
 
     def release(self, path, fh):
+        print(f"closing {fh} ({path}): {list(self.handles.keys())}")
+        # TODO: when can I remove references to file handles? 'cuz it ain't here!
+        # del self.handles[fh]
         return os.close(fh)
 
     def fsync(self, path, fdatasync, fh):
