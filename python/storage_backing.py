@@ -6,12 +6,15 @@ import fec
 from constants import *
 
 def create(path: str, directory: bool):
-	for root in ROOT_POINTS:
-		root_path = os.path.join(root, path)
-		if directory:
-			os.mkdir(root_path)
-		else:
-			open(root_path, "x").close()
+	if os.name == "posix":
+		print(path)
+	if os.name == "nt":
+		for root in ROOT_POINTS:
+			root_path = os.path.join(root, path)
+			if directory:
+				os.mkdir(root_path)
+			else:
+				open(root_path, "x").close()
 
 
 def read_file(path: str, start: int, length: int) -> bytes:

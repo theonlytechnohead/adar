@@ -93,12 +93,11 @@ if __name__ == "__main__":
     signal.signal(signal.SIGINT, handle)
     signal.signal(signal.SIGTERM, handle)
     if os.name == "posix":
-        # TODO: hookup callbacks w/ `peers`
+        # TODO: bring FUSE to par with Projected File System
         import storage_fuse
         storage = threading.Thread(target=storage_fuse.create)
         storage.start()
     if os.name == "nt":
-        # TODO: use the Windows Projected File System via PyProjFS
         import storage_projected
         storage = threading.Thread(target=storage_projected.create)
         storage.start()

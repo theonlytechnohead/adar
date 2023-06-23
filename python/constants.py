@@ -1,6 +1,6 @@
 import machineid
 
-ID = machineid.id()
+ID = machineid.id().strip()
 PORT = 6780
 SERVICE = "_adar._tcp.local."
 
