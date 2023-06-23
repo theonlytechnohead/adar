@@ -76,9 +76,14 @@ def rename(path: str, new_path: str):
 
 def write(path: str, start: int, length: int, data: bytes, **kwargs):
 	if os.name == "posix":
-		handle = kwargs["handle"]
-		os.lseek(handle, start, os.SEEK_SET)
-		return os.write(handle, data)
+		if "handle" in kwargs.keys():
+			handle = kwargs["handle"]
+			os.lseek(handle, start, os.SEEK_SET)
+			return os.write(handle, data)
+		else:
+			path = ROOT_POINT + path
+			with open(path, "wb") as file:
+				file.write(data)
 	if os.name == "nt":
 		# TODO: is this really necessary? it seems to help by fixing the file size and doing placeholdery stuff that hints the OS what's happened
 		real_path = kwargs["real_path"]
