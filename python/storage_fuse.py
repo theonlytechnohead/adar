@@ -1,6 +1,5 @@
 import os
 import errno
-from threading import Lock
 
 from fuse import FUSE, FuseOSError, Operations
 
@@ -68,12 +67,14 @@ class Storage(Operations):
         return os.mknod(self._root_path(path), mode, dev)
 
     def rmdir(self, path):
-        root_path = self._root_path(path)
-        return storage_backing.remove(root_path)
+        result = storage_backing.remove(path)
+        storage_sync.remove(path)
+        return result
 
     def mkdir(self, path, mode):
-        root_path = self._root_path(path)
-        return storage_backing.create(root_path, True, mode=mode)
+        result = storage_backing.create(path, True, mode=mode)
+        storage_sync.create(path, True)
+        return result
 
     def statfs(self, path):
         root_path = self._root_path(path)
@@ -83,16 +84,17 @@ class Storage(Operations):
             'f_frsize', 'f_namemax'))
 
     def unlink(self, path):
-        root_path = self._root_path(path)
-        return storage_backing.remove(root_path)
+        result = storage_backing.remove(path)
+        storage_sync.remove(path)
+        return result
 
     def symlink(self, name, target):
         return os.symlink(name, self._root_path(target))
 
     def rename(self, old, new):
-        root_old = self._root_path(old)
-        root_new = self._root_path(new)
-        return storage_backing.rename(root_old, root_new)
+        result = storage_backing.rename(old, new)
+        storage_sync.rename(old, new)
+        return result
 
     def link(self, target, name):
         return os.link(self._root_path(target), self._root_path(name))
@@ -110,22 +112,24 @@ class Storage(Operations):
             self.handles[handle].append(path)
         else:
             self.handles[handle] = path
-        print(f"opening {handle} ({path}): {list(self.handles.keys())}")
         return handle
 
     def create(self, path, mode, fi=None):
-        root_path = self._root_path(path)
-        return storage_backing.create(root_path, False, mode=mode)
+        result = storage_backing.create(path, False, mode=mode)
+        storage_sync.create(path, False)
+        return result
 
     def read(self, path, length, offset, fh):
         file_path = self.handles[fh]
-        root_path = self._root_path(file_path)
-        return storage_backing.read_file(root_path, offset, length, handle=fh)
+        result = storage_backing.read_file(file_path, offset, length, handle=fh)
+        # data = storage_sync.read(file_path, offset, length)
+        return result
 
     def write(self, path, buf, offset, fh):
         file_path = self.handles[fh]
-        root_path = self._root_path(file_path)
-        return storage_backing.write(root_path, offset, len(buf), buf, handle=fh)
+        result = storage_backing.write(file_path, offset, len(buf), buf, handle=fh)
+        storage_sync.write(file_path, offset, buf)
+        return result
 
     def truncate(self, path, length, fh=None):
         root_path = self._root_path(path)
@@ -136,7 +140,6 @@ class Storage(Operations):
         return os.fsync(fh)
 
     def release(self, path, fh):
-        print(f"closing {fh} ({path}): {list(self.handles.keys())}")
         # TODO: when can I remove references to file handles? 'cuz it ain't here!
         # del self.handles[fh]
         return os.close(fh)

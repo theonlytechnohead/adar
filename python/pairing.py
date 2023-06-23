@@ -43,7 +43,8 @@ def check_pair(peer: Peer) -> bool:
 
 def request_pair(peer: Peer) -> bool:
     accepted = False
-    with socket.create_connection((peer.fqdn, PORT)) as sock:
+    address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
+    with socket.create_connection((address, PORT)) as sock:
         sock.sendall(bytes("pair?" + "\n", "utf-8"))
         received = str(sock.recv(1024), "utf-8")
         accepted = True if received == "sure" else False
@@ -73,8 +74,9 @@ def pair(name: str, peer: Peer) -> bool:
 def connect(peer: Peer) -> tuple[str, socket.socket]:
     if peer.generator == None:
         peer.generator = DiffieHellman(group=14, key_bits=1024)
-    print(f"\tconnecting to {peer.fqdn}")
-    connection = socket.create_connection((peer.fqdn, PORT))
+    address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
+    print(f"\tconnecting to {address}")
+    connection = socket.create_connection((address, PORT))
     print(f"\tconnected to {connection.getpeername()[0]}")
     if connection.getpeername()[0] not in peer.addresses:
         connection.shutdown(socket.SHUT_RDWR)

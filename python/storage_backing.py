@@ -7,11 +7,18 @@ from constants import *
 
 def create(path: str, directory: bool, **kwargs):
 	if os.name == "posix":
-		mode = kwargs["mode"]
+		path = ROOT_POINT + path
+		mode = kwargs["mode"] if "mode" in kwargs else None
 		if directory:
-			return os.mkdir(path, mode)
+			if mode:
+				return os.mkdir(path, mode)
+			else:
+				return os.mkdir(path)
 		else:
-			return os.open(path, os.O_WRONLY | os.O_CREAT, mode)
+			if mode:
+				return os.open(path, os.O_WRONLY | os.O_CREAT, mode)
+			else:
+				return os.open(path, os.O_WRONLY | os.O_CREAT)
 	if os.name == "nt":
 		for root in ROOT_POINTS:
 			root_path = os.path.join(root, path)
@@ -57,6 +64,8 @@ def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 
 def rename(path: str, new_path: str):
 	if os.name == "posix":
+		path = ROOT_POINT + path
+		new_path = ROOT_POINT + new_path
 		return os.rename(path, new_path)
 	if os.name == "nt":
 		for root in ROOT_POINTS:
@@ -100,6 +109,7 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 
 def remove(path: str):
 	if os.name == "posix":
+		path = ROOT_POINT + path
 		if os.path.isdir(path):
 			return os.rmdir(path)
 		else:
