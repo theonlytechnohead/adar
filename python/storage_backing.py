@@ -54,11 +54,15 @@ def rename(path: str, new_path: str):
 		os.rename(root_path, root_new_path)
 
 
-def write(path: str, start: int, length: int, data: bytes):
+def write(path: str, real_path: str, start: int, length: int, data: bytes):
 	if os.name == "posix":
 		# TODO
 		pass
 	if os.name == "nt":
+		# TODO: is this really necessary? it seems to help by fixing the file size and doing placeholdery stuff that hints the OS what's happened
+		with open(real_path, "wb") as file:
+			file.seek(start)
+			file.write(data)
 		written = 0
 		files = []
 		for root in ROOT_POINTS:

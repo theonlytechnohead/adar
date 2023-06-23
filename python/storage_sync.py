@@ -8,6 +8,7 @@ from enum import Enum, auto
 from constants import *
 from peers import *
 
+# ASCII unit separator control character
 SEP = "\x1f"
 
 DEBUG = True
@@ -21,11 +22,11 @@ class Command(Enum):
 	REMOVE = auto()
 
 
-def treat_path(path: str) -> pathlib.PurePosixPath:
+def pton(path: str) -> pathlib.PurePosixPath:
 	return pathlib.PurePosixPath("/", path.replace("\\", "/"))
 
 
-def untreat_path(path: str, mount = True) -> pathlib.Path:
+def ntop(path: str, mount = True) -> pathlib.Path:
 	return pathlib.Path(MOUNT_POINT if mount else "", path.removeprefix("/").replace("/", os.sep))
 
 
@@ -57,18 +58,18 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 	with socket.create_connection((peer.fqdn, PORT)) as connection:
 		connection.sendall(output)
 	if command == Command.READ:
-		pass
+		return 0, bytes()
 
 
 def create(path: str, directory: bool):
-	path = treat_path(path)
+	path = pton(path)
 	if DEBUG: print(f"creating {path} ({'folder' if directory else 'file'})")
 	for peer in peer_list:
 		transmit(peer, Command.CREATE, path, directory)
 
 
 def read(path: str, start: int, length: int) -> bytes:
-	path = treat_path(path)
+	path = pton(path)
 	if DEBUG: print(f"reading {path} ({start}->{start+length})")
 	output = bytearray(length)
 	for peer in peer_list:
@@ -78,15 +79,15 @@ def read(path: str, start: int, length: int) -> bytes:
 
 
 def rename(path: str, new_path: str):
-	path = treat_path(path)
-	new_path = treat_path(new_path)
+	path = pton(path)
+	new_path = pton(new_path)
 	if DEBUG: print(f"renaming {path} -> {new_path}")
 	for peer in peer_list:
 		transmit(peer, Command.RENAME, path, new_path)
 
 
 def write(path: str, start: int, data: bytes):
-	path = treat_path(path)
+	path = pton(path)
 	data = data.replace("\r\n".encode(), "\n".encode())
 	length = len(data)
 	if DEBUG: print(f"writing  {path} ({start}->{start+length}): {data}")
@@ -95,7 +96,7 @@ def write(path: str, start: int, data: bytes):
 
 
 def remove(path: str):
-	path = treat_path(path)
+	path = pton(path)
 	if DEBUG: print(f"removing {path}")
 	for peer in peer_list:
 		transmit(peer, Command.REMOVE, path)
@@ -103,31 +104,24 @@ def remove(path: str):
 
 def create_local(path: str, directory: bool):
 	if DEBUG: print(f"creating local {path} ({'folder' if directory else 'file'})")
-	storage_backing.create(untreat_path(path, False), directory)
+	storage_backing.create(ntop(path, False), directory)
 
 
 def read_local(path: str, start: int, length: int) -> bytes:
 	if DEBUG: print(f"reading local {path} ({start}->{start+length})")
-	return storage_backing.read(untreat_path(path, False), start, length)
+	return storage_backing.read(ntop(path, False), start, length)
 
 
 def rename_local(path: str, new_path: str):
 	if DEBUG: print(f"renaming local {path} -> {new_path}")
-	storage_backing.rename(untreat_path(path, False), untreat_path(new_path, False))
+	storage_backing.rename(ntop(path, False), ntop(new_path, False))
 
 
 def write_local(path: str, start: int, length: int, data: bytes):
 	if DEBUG: print(f"writing local: {path} ({start}->{start+length}): {data}")
-	storage_backing.write(untreat_path(path, False), start, length, data)
-	if os.name == "nt":
-		# TODO: is this really necessary? it seems to help by fixing the file size and doing placeholdery stuff that hints the OS what's happened
-		path = untreat_path(path)
-		with open(path, "wb") as file:
-			file.seek(start)
-			file.write(data)
+	storage_backing.write(ntop(path, False), ntop(path), start, length, data)
 
 
 def remove_local(path: str):
 	if DEBUG: print(f"removing local: {path}")
-	backing_path = untreat_path(path, False)
-	storage_backing.remove(backing_path)	
+	storage_backing.remove(ntop(path, False))	
