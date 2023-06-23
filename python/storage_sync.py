@@ -65,7 +65,7 @@ def create(path: str, directory: bool):
 	path = pton(path)
 	if DEBUG: print(f"creating {path} ({'folder' if directory else 'file'})")
 	for peer in peer_list:
-		transmit(peer, Command.CREATE, path, directory)
+		transmit(peer, Command.CREATE, path, bool(directory))
 
 
 def read(path: str, start: int, length: int) -> bytes:

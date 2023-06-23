@@ -183,8 +183,8 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
         case ProjectedFS.PRJ_NOTIFICATION_NEW_FILE_CREATED:
             if DEBUG:
                 print(f"created: {callbackData.contents.FilePathName}")
-            storage_backing.create(callbackData.contents.FilePathName, isDirectory)
-            storage_sync.create(callbackData.contents.FilePathName, isDirectory)
+            storage_backing.create(callbackData.contents.FilePathName, bool(isDirectory))
+            storage_sync.create(callbackData.contents.FilePathName, bool(isDirectory))
         case ProjectedFS.PRJ_NOTIFICATION_FILE_RENAMED:
             if destinationFileName == "":
                 if DEBUG:
