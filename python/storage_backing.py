@@ -89,7 +89,8 @@ def remove(path: str):
 		# TODO: figure out why directories are sticky (sometimes?)
 		for root in ROOT_POINTS:
 			root_path = os.path.join(root, path)
-			if os.path.isdir(root_path):
-				shutil.rmtree(root_path)
-			else:
-				os.remove(root_path)
+			if os.path.exists(root_path):
+				if os.path.isdir(root_path):
+					shutil.rmtree(root_path)
+				else:
+					os.remove(root_path)
