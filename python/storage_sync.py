@@ -1,6 +1,5 @@
 import os
 import pathlib
-import shutil
 import threading
 
 import storage_backing
@@ -118,12 +117,14 @@ def rename_local(path: str, new_path: str):
 
 
 def write_local(path: str, start: int, length: int, data: bytes):
-	if DEBUG: print(f"writing local: {path} ({start}->{start+length}: {data})")
+	if DEBUG: print(f"writing local: {path} ({start}->{start+length}): {data}")
 	storage_backing.write(untreat_path(path, False), start, length, data)
-	path = untreat_path(path)
-	with open(path, "wb") as file:
-		file.seek(start)
-		file.write(data)
+	if os.name == "nt":
+		# TODO: is this really necessary? it seems to help by fixing the file size and doing placeholdery stuff that hints the OS what's happened
+		path = untreat_path(path)
+		with open(path, "wb") as file:
+			file.seek(start)
+			file.write(data)
 
 
 def remove_local(path: str):

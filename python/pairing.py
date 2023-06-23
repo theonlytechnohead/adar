@@ -4,7 +4,6 @@ import socket
 from diffiehellman import DiffieHellman
 from zeroconf import ServiceInfo, IPVersion
 
-import sync_storage
 from constants import PORT
 from peers import *
 

@@ -4,6 +4,7 @@ import socketserver
 import threading
 from time import sleep
 
+import storage_sync
 from advertise import *
 from constants import *
 from peers import *
@@ -45,27 +46,27 @@ class AdarHandler(socketserver.StreamRequestHandler):
             self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
         else:
             print(f"{self.client_address[0]}: {self.data}")
-            if self.data.startswith(str(sync_storage.Command.CREATE)):
+            if self.data.startswith(str(storage_sync.Command.CREATE)):
                 arguments = self.data.strip().split(":")[1]
-                path, directory = arguments.split(sync_storage.SEP)
-                sync_storage.create_local(path, directory == "1")
-            if self.data.startswith(str(sync_storage.Command.READ)):
+                path, directory = arguments.split(storage_sync.SEP)
+                storage_sync.create_local(path, directory == "1")
+            if self.data.startswith(str(storage_sync.Command.READ)):
                 arguments = self.data.strip().split(":")[1]
-                path, start, length = arguments.split(sync_storage.SEP)
-                sync_storage.read_local(path, int(start), int(length))
-            if self.data.startswith(str(sync_storage.Command.RENAME)):
+                path, start, length = arguments.split(storage_sync.SEP)
+                storage_sync.read_local(path, int(start), int(length))
+            if self.data.startswith(str(storage_sync.Command.RENAME)):
                 arguments = self.data.strip().split(":")[1]
-                path, new_path = arguments.split(sync_storage.SEP)
-                sync_storage.rename_local(path, new_path)
-            if self.data.startswith(str(sync_storage.Command.WRITE)):
+                path, new_path = arguments.split(storage_sync.SEP)
+                storage_sync.rename_local(path, new_path)
+            if self.data.startswith(str(storage_sync.Command.WRITE)):
                 arguments = self.data.strip().split(":")[1]
-                path, start, length, _ = arguments.split(sync_storage.SEP)
-                _, _, _, data = self.raw_data.split(sync_storage.SEP.encode())
-                sync_storage.write_local(path, int(start), int(length), data)
-            if self.data.startswith(str(sync_storage.Command.REMOVE)):
+                path, start, length, _ = arguments.split(storage_sync.SEP)
+                _, _, _, data = self.raw_data.split(storage_sync.SEP.encode())
+                storage_sync.write_local(path, int(start), int(length), data)
+            if self.data.startswith(str(storage_sync.Command.REMOVE)):
                 arguments = self.data.strip().split(":")[1]
                 path = arguments
-                sync_storage.remove_local(path)
+                storage_sync.remove_local(path)
             self.data = bytes(self.data.upper(), "utf-8")
         self.wfile.write(self.data)
 

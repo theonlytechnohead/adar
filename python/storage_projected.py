@@ -6,7 +6,7 @@ import sys
 import fec
 import filetimes
 import ProjectedFS
-import sync_storage
+import storage_sync
 import storage_backing
 from constants import *
 from peers import *
@@ -119,7 +119,7 @@ def write_file(path):
     for file in files:
         file.close()
     with open(mount_path, "rb") as file:
-        sync_storage.write(path, 0, file.read())
+        storage_sync.write(path, 0, file.read())
 
 
 @ProjectedFS.PRJ_GET_DIRECTORY_ENUMERATION_CB
@@ -186,7 +186,7 @@ def get_file_data(callbackData, byteOffset, length):
             return E_INVALIDARG
         contents = read_file(
             callbackData.contents.FilePathName, byteOffset, length)
-        sync_storage.read(callbackData.contents.FilePathName, byteOffset, length)
+        storage_sync.read(callbackData.contents.FilePathName, byteOffset, length)
         writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(
             callbackData.contents.NamespaceVirtualizationContext, length)
         if not writeBuffer:
@@ -209,13 +209,13 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
             if DEBUG:
                 print(f"created: {callbackData.contents.FilePathName}")
             storage_backing.create(callbackData.contents.FilePathName, isDirectory)
-            sync_storage.create(callbackData.contents.FilePathName, isDirectory)
+            storage_sync.create(callbackData.contents.FilePathName, isDirectory)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_RENAMED:
             if DEBUG:
                 print(
                     f"renamed: {callbackData.contents.FilePathName} -> {destinationFileName}")
             storage_backing.rename(callbackData.contents.FilePathName, destinationFileName)
-            sync_storage.rename(callbackData.contents.FilePathName, destinationFileName)
+            storage_sync.rename(callbackData.contents.FilePathName, destinationFileName)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_MODIFIED:
             if DEBUG:
                 print(
@@ -228,7 +228,7 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
             if DEBUG:
                 print(f"deleted: {callbackData.contents.FilePathName}")
             storage_backing.remove(callbackData.contents.FilePathName)
-            sync_storage.remove(callbackData.contents.FilePathName)
+            storage_sync.remove(callbackData.contents.FilePathName)
     return S_OK
 
 

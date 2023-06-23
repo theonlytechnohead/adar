@@ -1,0 +1,2 @@
+SSDP (Simple Service Discovery Protocol)
+WS-Discovery (Web Services Dynamic Discovery)
