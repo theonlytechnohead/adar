@@ -97,31 +97,6 @@ def read_file(path, offset: int, length: int) -> bytes:
     return bytes(output)
 
 
-def write_file(path):
-    mount_path = os.path.join(MOUNT_POINT, path)
-    size = os.stat(mount_path).st_size
-    written = 0
-    files = []
-    for root in ROOT_POINTS:
-        root_path = os.path.join(root, path)
-        files.append(open(root_path, "wb"))
-    with open(mount_path, "rb") as file:
-        while written < size:
-            byte1 = file.read(1)
-            byte2 = file.read(1)
-            if byte2 == b"":
-                byte2 = b"\x00"
-            block1, block2 = fec.encode(byte1, byte2)
-            files[0].write(block1)
-            if byte2 != b"\x00":
-                files[1].write(block2)
-            written += 2
-    for file in files:
-        file.close()
-    with open(mount_path, "rb") as file:
-        storage_sync.write(path, 0, file.read())
-
-
 @ProjectedFS.PRJ_GET_DIRECTORY_ENUMERATION_CB
 def get_directory_enumeration(callbackData, enumerationId, searchExpression, dirEntryBufferHandle):
     try:
@@ -223,7 +198,12 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
             # https://stackoverflow.com/questions/55069340/windows-projected-file-system-read-only
             # writes always convert a placeholder into a "full" file (but we still get notifications, etc.)
             # so we need to be notified of this and rewrite the modified file into the backing store
-            write_file(callbackData.contents.FilePathName)
+            mount_path = os.path.join(MOUNT_POINT, callbackData.contents.FilePathName)
+            size = os.stat(mount_path).st_size
+            with open(mount_path, "rb") as file:
+                data = file.read()
+                storage_backing.write(callbackData.contents.FilePathName, mount_path, 0, size, data)
+                storage_sync.write(callbackData.contents.FilePathName, 0, data)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_DELETED:
             if DEBUG:
                 print(f"deleted: {callbackData.contents.FilePathName}")
