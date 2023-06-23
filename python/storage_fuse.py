@@ -108,15 +108,13 @@ class Storage(Operations):
     def open(self, path, flags):
         root_path = self._root_path(path)
         handle = os.open(root_path, flags)
-        if path in self.handles.keys():
-            self.handles[handle].append(path)
-        else:
-            self.handles[handle] = path
+        self.handles[handle] = path
         return handle
 
     def create(self, path, mode, fi=None):
         result = storage_backing.create(path, False, mode=mode)
         storage_sync.create(path, False)
+        self.handles[result] = path
         return result
 
     def read(self, path, length, offset, fh):
