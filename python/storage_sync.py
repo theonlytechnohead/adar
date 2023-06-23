@@ -11,7 +11,7 @@ from peers import *
 # ASCII unit separator control character
 SEP = "\x1f"
 
-DEBUG = True
+DEBUG = False
 
 
 class Command(Enum):

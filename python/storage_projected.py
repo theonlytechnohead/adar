@@ -186,11 +186,23 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
             storage_backing.create(callbackData.contents.FilePathName, isDirectory)
             storage_sync.create(callbackData.contents.FilePathName, isDirectory)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_RENAMED:
-            if DEBUG:
-                print(
-                    f"renamed: {callbackData.contents.FilePathName} -> {destinationFileName}")
-            storage_backing.rename(callbackData.contents.FilePathName, destinationFileName)
-            storage_sync.rename(callbackData.contents.FilePathName, destinationFileName)
+            if destinationFileName == "":
+                if DEBUG:
+                    print(f"moved elsewhere: {callbackData.contents.FilePathName}")
+                storage_backing.remove(callbackData.contents.FilePathName)
+                storage_sync.remove(callbackData.contents.FilePathName)
+            elif callbackData.contents.FilePathName == "":
+                if DEBUG:
+                    print(f"moved here: {destinationFileName}")
+                storage_backing.create(destinationFileName, isDirectory)
+                storage_sync.create(destinationFileName, isDirectory)
+                # TODO: copy data?
+            else:
+                if DEBUG:
+                    print(
+                        f"renamed: {callbackData.contents.FilePathName} -> {destinationFileName}")
+                storage_backing.rename(callbackData.contents.FilePathName, destinationFileName)
+                storage_sync.rename(callbackData.contents.FilePathName, destinationFileName)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_MODIFIED:
             if DEBUG:
                 print(
