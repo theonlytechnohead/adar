@@ -49,7 +49,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
             if self.data.startswith(str(storage_sync.Command.CREATE)):
                 arguments = self.data.strip().split(":")[1]
                 path, directory = arguments.split(storage_sync.SEP)
-                storage_sync.create_local(path, directory == str(True))
+                storage_sync.create_local(path, True if directory == "1" else False)
             if self.data.startswith(str(storage_sync.Command.READ)):
                 arguments = self.data.strip().split(":")[1]
                 path, start, length = arguments.split(storage_sync.SEP)

@@ -195,7 +195,7 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
                 if DEBUG:
                     print(f"moved here: {destinationFileName}")
                 storage_backing.create(destinationFileName, isDirectory)
-                storage_sync.create(destinationFileName, isDirectory)
+                storage_sync.create(destinationFileName, bool(isDirectory))
                 # TODO: copy data?
             else:
                 if DEBUG:
