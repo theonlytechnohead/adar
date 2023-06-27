@@ -46,18 +46,18 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 	output = "".encode()
 	match command:
 		case Command.CREATE:
-			output = f"{Command.CREATE}:{path}{SEP}{payload}\n".encode()
+			output = f"{Command.CREATE.value}:{path}{SEP}{payload}\n".encode()
 		case Command.READ:
 			length = kwargs["length"]
-			output = f"{Command.READ}:{path}{SEP}{payload}{SEP}{length}\n".encode()
+			output = f"{Command.READ.value}:{path}{SEP}{payload}{SEP}{length}\n".encode()
 		case Command.RENAME:
-			output = f"{Command.RENAME}:{path}{SEP}{payload}\n".encode()
+			output = f"{Command.RENAME.value}:{path}{SEP}{payload}\n".encode()
 		case Command.WRITE:
 			start = kwargs["start"]
 			length = kwargs["length"]
-			output = f"{Command.WRITE}:{path}{SEP}{start}{SEP}{length}{SEP}{payload.decode()}\n".encode()
+			output = f"{Command.WRITE.value}:{path}{SEP}{start}{SEP}{length}{SEP}{payload.decode()}\n".encode()
 		case Command.REMOVE:
-			output = f"{Command.REMOVE}:{path}\n".encode()
+			output = f"{Command.REMOVE.value}:{path}\n".encode()
 	address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
 	with socket.create_connection((address, PORT)) as connection:
 		connection.sendall(output)

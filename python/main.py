@@ -46,24 +46,24 @@ class AdarHandler(socketserver.StreamRequestHandler):
             self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
         else:
             print(f"{self.client_address[0]}: {self.data}")
-            if self.data.startswith(str(storage_sync.Command.CREATE)):
+            if self.data.startswith(str(storage_sync.Command.CREATE.value)):
                 arguments = self.data.strip().split(":")[1]
                 path, directory = arguments.split(storage_sync.SEP)
                 storage_sync.create_local(path, True if directory == "1" else False)
-            if self.data.startswith(str(storage_sync.Command.READ)):
+            if self.data.startswith(str(storage_sync.Command.READ.value)):
                 arguments = self.data.strip().split(":")[1]
                 path, start, length = arguments.split(storage_sync.SEP)
                 storage_sync.read_local(path, int(start), int(length))
-            if self.data.startswith(str(storage_sync.Command.RENAME)):
+            if self.data.startswith(str(storage_sync.Command.RENAME.value)):
                 arguments = self.data.strip().split(":")[1]
                 path, new_path = arguments.split(storage_sync.SEP)
                 storage_sync.rename_local(path, new_path)
-            if self.data.startswith(str(storage_sync.Command.WRITE)):
+            if self.data.startswith(str(storage_sync.Command.WRITE.value)):
                 arguments = self.data.strip().split(":")[1]
                 path, start, length, _ = arguments.split(storage_sync.SEP)
                 _, _, _, data = self.raw_data.split(storage_sync.SEP.encode())
                 storage_sync.write_local(path, int(start), int(length), data)
-            if self.data.startswith(str(storage_sync.Command.REMOVE)):
+            if self.data.startswith(str(storage_sync.Command.REMOVE.value)):
                 arguments = self.data.strip().split(":")[1]
                 path = arguments
                 storage_sync.remove_local(path)
