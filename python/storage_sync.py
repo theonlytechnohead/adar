@@ -58,9 +58,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 			output = f"{Command.WRITE.value}:{path}{SEP}{start}{SEP}{length}{SEP}{payload.decode()}\n".encode()
 		case Command.REMOVE:
 			output = f"{Command.REMOVE.value}:{path}\n".encode()
-	address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
-	with socket.create_connection((address, PORT)) as connection:
-		connection.sendall(output)
+	peer.connection.sendall(output)
 	if command == Command.READ:
 		return 0, bytes()
 
