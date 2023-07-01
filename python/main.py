@@ -19,17 +19,12 @@ class AdarHandler(socketserver.StreamRequestHandler):
         global stop
         while not stop:
             try:
-                readable, writable, erroring = select.select([self.connection,], [self.connection,], [], 1)
+                readable, writable, _ = select.select([self.connection,], [self.connection,], [], 1)
             except select.error as e:
                 print(f"Socket error {e}, closing...")
                 break
             if 0 < len(readable) and 0 < len(writable):
-                try:
-                    self.raw_data = self.rfile.readline(2048)
-                except:
-                    # TODO: is there a more graceful way of doing this?
-                    print(f"Socket error, probably closed")
-                    break
+                self.raw_data = self.rfile.readline(2048)
                 if 0 == len(self.raw_data):
                     sleep(1)
                     continue
@@ -101,6 +96,10 @@ def handle(signum, frame):
     print("\rStopping...", end="")
     service.close()
     adar.shutdown()
+    for peer in peer_list:
+        if peer.connection != None:
+            peer.connection.shutdown(2)
+            peer.connection.close()
     if os.name == "posix":
         storage_fuse.destroy()
     if os.name == "nt":
