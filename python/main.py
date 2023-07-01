@@ -18,10 +18,9 @@ class AdarHandler(socketserver.StreamRequestHandler):
         global stop
         while not stop:
             try:
-                readable, writable, erroring = select.select([self.connection,], [self.connection,], [], 1)
-            except select.error:
-                self.connection.shutdown(2)
-                self.connection.close()
+                readable, writable, erroring = select.select([self.connection,], [self.connection,], [])
+            except select.error as e:
+                print(f"Socket error {e}, closing...")
                 break
             if 0 < len(readable) and 0 < len(writable):
                 self.raw_data = self.rfile.readline(2048)

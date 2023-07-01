@@ -99,5 +99,4 @@ def connect(peer: Peer) -> tuple[str, socket.socket]:
     data = peer.connection.recv(len(data))
     other_key = base64.b64decode(data[4:-1])
     peer.shared_key = peer.generator.generate_shared_key(other_key)
-    peer.connection.close()
     store_peer(peer)
