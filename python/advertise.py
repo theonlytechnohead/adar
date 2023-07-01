@@ -39,6 +39,9 @@ class AdarListener(ServiceListener):
                 index = i
                 break
         if index != None:
+            if peer_list[index].connection != None:
+                peer_list[index].connection.shutdown(2)
+                peer_list[index].connection.close()
             del peer_list[index]
 
 
