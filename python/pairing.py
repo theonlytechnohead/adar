@@ -44,10 +44,17 @@ def check_pair(peer: Peer) -> bool:
 def request_pair(peer: Peer) -> bool:
     accepted = False
     address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
-    with socket.create_connection((address, PORT)) as sock:
-        sock.sendall(bytes("pair?" + "\n", "utf-8"))
-        received = str(sock.recv(1024), "utf-8")
-        accepted = True if received == "sure" else False
+    print(f"\tconnecting to {address}")
+    connection = socket.create_connection((address, PORT))
+    print(f"\tconnected to {connection.getpeername()[0]}")
+    if connection.getpeername()[0] not in peer.addresses:
+        connection.shutdown(socket.SHUT_RDWR)
+        connection.close()
+        return
+    peer.connection = connection
+    connection.sendall(bytes("pair?" + "\n", "utf-8"))
+    received = str(connection.recv(1024), "utf-8")
+    accepted = True if received == "sure" else False
     return accepted
 
 
@@ -74,19 +81,22 @@ def pair(name: str, peer: Peer) -> bool:
 def connect(peer: Peer) -> tuple[str, socket.socket]:
     if peer.generator == None:
         peer.generator = DiffieHellman(group=14, key_bits=1024)
-    address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
-    print(f"\tconnecting to {address}")
-    connection = socket.create_connection((address, PORT))
-    print(f"\tconnected to {connection.getpeername()[0]}")
-    if connection.getpeername()[0] not in peer.addresses:
-        connection.shutdown(socket.SHUT_RDWR)
-        connection.close()
-        return
+    if peer.connection:
+        print(f"\tconnected to {peer.connection.getpeername()[0]}")
+    else:
+        address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
+        print(f"\tconnecting to {address}")
+        connection = socket.create_connection((address, PORT))
+        print(f"\tconnected to {connection.getpeername()[0]}")
+        if connection.getpeername()[0] not in peer.addresses:
+            connection.shutdown(socket.SHUT_RDWR)
+            connection.close()
+            return
+        peer.connection = connection
     our_key = peer.generator.get_public_key()
     data = "key?".encode() + base64.b64encode(our_key) + "\n".encode()
-    connection.sendall(data)
-    data = connection.recv(len(data))
+    peer.connection.sendall(data)
+    data = peer.connection.recv(len(data))
     other_key = base64.b64decode(data[4:-1])
     peer.shared_key = peer.generator.generate_shared_key(other_key)
-    connection.close()
     store_peer(peer)
