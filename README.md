@@ -52,7 +52,7 @@ For Unix (GNU+Linux, macOS):
 ***OR***  
 - in an elevated Powershell prompt (Run as Administrator)  
 ```powershell
->>> Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
+PS > Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
 ```
 
 ### 4. Run the program
