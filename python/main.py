@@ -8,7 +8,7 @@ from time import sleep
 import storage_sync
 from advertise import *
 from constants import *
-from peers import *
+from peer import *
 
 stop = False
 
@@ -59,28 +59,26 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     peer.shared_key = peer.generator.generate_shared_key(other_key)
                     self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
                 else:
-                    print(f"{self.client_address[0]}: {self.data}")
-                    if self.data.startswith(str(storage_sync.Command.CREATE.value)):
-                        arguments = self.data.strip().split(":")[1]
-                        path, directory = arguments.split(storage_sync.SEP)
-                        storage_sync.create_local(path, True if directory == "1" else False)
-                    if self.data.startswith(str(storage_sync.Command.READ.value)):
-                        arguments = self.data.strip().split(":")[1]
-                        path, start, length = arguments.split(storage_sync.SEP)
-                        storage_sync.read_local(path, int(start), int(length))
-                    if self.data.startswith(str(storage_sync.Command.RENAME.value)):
-                        arguments = self.data.strip().split(":")[1]
-                        path, new_path = arguments.split(storage_sync.SEP)
-                        storage_sync.rename_local(path, new_path)
-                    if self.data.startswith(str(storage_sync.Command.WRITE.value)):
-                        arguments = self.data.strip().split(":")[1]
-                        path, start, length, _ = arguments.split(storage_sync.SEP)
-                        _, _, _, data = self.raw_data.split(storage_sync.SEP.encode())
-                        storage_sync.write_local(path, int(start), int(length), data)
-                    if self.data.startswith(str(storage_sync.Command.REMOVE.value)):
-                        arguments = self.data.strip().split(":")[1]
-                        path = arguments
-                        storage_sync.remove_local(path)
+                    print(f"{self.client_address[0]}: {self.data}", end="\t")
+                    command = storage_sync.Command(int(self.data.split(":", 1)[0]))
+                    arguments = self.data.strip().split(":", 1)[1]
+                    match command:
+                        case storage_sync.Command.CREATE:
+                            path, directory = arguments.split(storage_sync.SEP)
+                            storage_sync.create_local(path, bool(int(directory)))
+                        case storage_sync.Command.READ:
+                            path, start, length = arguments.split(storage_sync.SEP)
+                            storage_sync.read_local(path, int(start), int(length))
+                        case storage_sync.Command.RENAME:
+                            path, new_path = arguments.split(storage_sync.SEP)
+                            storage_sync.rename_local(path, new_path)
+                        case storage_sync.Command.WRITE:
+                            path, start, length, _ = arguments.split(storage_sync.SEP)
+                            _, _, _, data = self.raw_data.split(storage_sync.SEP.encode())
+                            storage_sync.write_local(path, int(start), int(length), data)
+                        case storage_sync.Command.REMOVE:
+                            path = arguments
+                            storage_sync.remove_local(path)
                     self.data = bytes(self.data.upper(), "utf-8")
                 self.wfile.write(self.data)
 
@@ -122,7 +120,7 @@ if __name__ == "__main__":
     adar = dual_stack(("::", PORT), AdarHandler)
     server = threading.Thread(target=adar.serve_forever)
     server.start()
-    service = zeroconf()
+    service = advertise()
     while not stop:
         sleep(1)
     print("\tdone")

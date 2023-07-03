@@ -5,7 +5,7 @@ from diffiehellman import DiffieHellman
 from zeroconf import ServiceInfo, IPVersion
 
 from constants import PORT
-from peers import *
+from peer import *
 
 
 def add_peer(info: ServiceInfo) -> Peer:
@@ -42,7 +42,6 @@ def check_pair(peer: Peer) -> bool:
 
 
 def request_pair(peer: Peer) -> bool:
-    accepted = False
     address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
     print(f"\tconnecting to {address}")
     connection = socket.create_connection((address, PORT))
@@ -54,11 +53,12 @@ def request_pair(peer: Peer) -> bool:
     peer.connection = connection
     connection.sendall(bytes("pair?" + "\n", "utf-8"))
     received = str(connection.recv(1024), "utf-8")
-    accepted = True if received == "sure" else False
-    return accepted
+    return True if received == "sure" else False
 
 
 def store_peer(peer: Peer):
+    if check_pair(peer):
+        return
     with open("pairings", "a") as file:
         file.write(f"{peer.uuid}")
         if peer.shared_key != b"":
@@ -78,7 +78,7 @@ def pair(name: str, peer: Peer) -> bool:
     return False
 
 
-def connect(peer: Peer) -> tuple[str, socket.socket]:
+def connect(peer: Peer):
     if peer.generator == None:
         peer.generator = DiffieHellman(group=14, key_bits=1024)
     if peer.connection:
