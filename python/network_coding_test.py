@@ -21,6 +21,8 @@ def main(n = 8):
             coefficients[messages] = 1
             encoder.consume_packet(coefficients, packet)
         coefficient, packet = encoder.get_new_coded_packet()
+        # https://stackoverflow.com/questions/32284940/python-bit-list-to-byte-list
+        print(int("".join(map(str, coefficient)), 2), int("".join(map(str, packet)), 2))
         decoder.consume_packet(coefficient, packet)
         messages += 1
     
@@ -37,8 +39,9 @@ def main(n = 8):
         raise ValueError
 
 if __name__ == "__main__":
-    efficiencies = []
-    for n in range(10, 500, 20):
-        efficiencies.append(main(n))
-    average = sum(efficiencies) / len(efficiencies)
-    print(f"average efficiency: {average * 100:.0f}%")
+    main(10)
+    # efficiencies = []
+    # for n in range(10, 500, 20):
+        # efficiencies.append(main(n))
+    # average = sum(efficiencies) / len(efficiencies)
+    # print(f"average efficiency: {average * 100:.0f}%")
