@@ -59,7 +59,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     peer.shared_key = peer.generator.generate_shared_key(other_key)
                     self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
                 else:
-                    print(f"{self.client_address[0]}: {self.data}")
+                    print(f"{self.client_address[0]}: {self.data}", end="\t")
                     if self.data.startswith(str(storage_sync.Command.CREATE.value)):
                         arguments = self.data.strip().split(":")[1]
                         path, directory = arguments.split(storage_sync.SEP)
