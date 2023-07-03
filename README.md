@@ -24,37 +24,38 @@ For Unix (GNU+Linux, macOS):
 
 ## Running (from source)
 
-1. Clone from GitHub
+### 1. Clone from GitHub
 
 ```sh
 ~ $ git clone https://github.com/theonlytechnohead/adar.git
 ```
 
-2. Install `simplenc`
+### 2. Install `simplenc`
 
 ```sh
 ~ $ cd adar/python/simple_nc-main
 ~/adar/python/simple_nc-main $ pip install .
 ```
 
-3. Install requirements
+### 3. Install requirements
 
 ```sh
 ~ $ cd adar/python
 ~/adar/python $ pip install -r requirements.txt
 ```
 
-For Unix systems (GNU+Linux, macOS), ensure that FUSE is working, e.g. with the `libfuse` library
+#### For Unix systems (GNU+Linux, macOS):
+- ensure that FUSE is working, e.g. with the `libfuse` library
 
-For Windows systems, enable `Windows Projected File System` in `Turn Windows features on or off`
-
-***OR***
-
-```ps
-> Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
+#### For Windows systems, either:
+- enable `Windows Projected File System` in `Turn Windows features on or off`  
+***OR***  
+- in an elevated Powershell prompt (Run As Administrator...)  
+```powershell
+>>> Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
 ```
 
-4. Run the program
+### 4. Run the program
 
 ```sh
 ~ $ cd adar/python
@@ -70,13 +71,13 @@ You can run `adar` on additional computers to pair and connect to them, which wi
 
 Follow the steps above for running from source, verify all is working as expected.
 
-1. Install `pyinstaller`
+### 1. Install `pyinstaller`
 
 ```sh
 pip install pyinstaller
 ```
 
-2. Build
+### 2. Build
 
 ```sh
 ~ $ cd adar
