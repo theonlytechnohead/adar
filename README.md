@@ -50,7 +50,7 @@ For Unix (GNU+Linux, macOS):
 #### For Windows systems, either:
 - enable `Windows Projected File System` in `Turn Windows features on or off`  
 ***OR***  
-- in an elevated Powershell prompt (Run As Administrator...)  
+- in an elevated Powershell prompt (Run as Administrator)  
 ```powershell
 >>> Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
 ```
