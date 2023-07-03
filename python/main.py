@@ -23,8 +23,12 @@ class AdarHandler(socketserver.StreamRequestHandler):
             except select.error as e:
                 print(f"Socket error {e}, closing...")
                 break
-            if 0 < len(readable) and 0 < len(writable):
-                self.raw_data = self.rfile.readline(2048)
+            if readable and writable:
+                try:
+                    self.raw_data = self.rfile.readline(2048)
+                except:
+                    # socket closed unexpectedly
+                    break
                 if 0 == len(self.raw_data):
                     sleep(1)
                     continue
