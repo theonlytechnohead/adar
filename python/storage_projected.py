@@ -4,7 +4,15 @@ import shutil
 import sys
 
 import fec
-import ProjectedFS
+try:
+    import ProjectedFS
+except FileNotFoundError:
+    print("Please enable the Windows Projected File System first!")
+    print("You can do so in the 'Turn Windows features on or off' Control Panel applet")
+    print("\tor")
+    print("Open an elevated (Run as Administator) Powershell and run:")
+    print("Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart")
+    exit()
 import storage_sync
 import storage_backing
 from constants import *
