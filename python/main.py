@@ -8,7 +8,7 @@ from time import sleep
 import storage_sync
 from advertise import *
 from constants import *
-from peers import *
+from peer import *
 
 stop = False
 
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     adar = dual_stack(("::", PORT), AdarHandler)
     server = threading.Thread(target=adar.serve_forever)
     server.start()
-    service = zeroconf()
+    service = advertise()
     while not stop:
         sleep(1)
     print("\tdone")

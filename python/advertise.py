@@ -5,7 +5,7 @@ from zeroconf import Zeroconf, ServiceListener, ServiceInfo, ServiceBrowser
 
 from constants import *
 from pairing import *
-from peers import *
+from peer import *
 
 this_name = f"{socket.gethostname()}.{SERVICE}"
 
@@ -64,7 +64,7 @@ def get_local_non_loopback_ipv6_addresses():
                     yield address_info["addr"]
 
 
-def zeroconf() -> Zeroconf:
+def advertise() -> Zeroconf:
     zeroconf = Zeroconf()
     properties = {
         "Description": "Network coding for automated distributed storage systems",

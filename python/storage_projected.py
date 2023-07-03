@@ -4,12 +4,11 @@ import shutil
 import sys
 
 import fec
-import filetimes
 import ProjectedFS
 import storage_sync
 import storage_backing
 from constants import *
-from peers import *
+from peer import *
 
 DEBUG = False
 
@@ -23,6 +22,15 @@ E_INVALIDARG = 0x80070057
 # HRESULT_FROM_WIN32()
 ERROR_FILE_NOT_FOUND = 0x80070002
 ERROR_INVALID_PARAMETER = 0x80070057
+
+# http://support.microsoft.com/kb/167296
+# How To Convert a UNIX time_t to a Win32 FILETIME or SYSTEMTIME
+EPOCH_AS_FILETIME = 116444736000000000  # January 1, 1970 as MS file time
+HUNDREDS_OF_NANOSECONDS = 10000000
+
+def timestamp_to_filetime(ts):
+    return EPOCH_AS_FILETIME + (int(ts) * HUNDREDS_OF_NANOSECONDS)
+
 
 instanceHandle = None
 sessions = dict()
@@ -46,10 +54,10 @@ def end_directory_enumeration(callbackData, enumerationId):
 def get_fileinfo(path) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
     fileInfo = ProjectedFS.PRJ_FILE_BASIC_INFO()
     stats = os.stat(path)
-    fileInfo.CreationTime = filetimes.timestamp_to_filetime(stats.st_ctime)
-    fileInfo.LastAccessTime = filetimes.timestamp_to_filetime(stats.st_atime)
-    fileInfo.LastWriteTime = filetimes.timestamp_to_filetime(stats.st_mtime)
-    fileInfo.ChangeTime = filetimes.timestamp_to_filetime(stats.st_mtime)
+    fileInfo.CreationTime = timestamp_to_filetime(stats.st_ctime)
+    fileInfo.LastAccessTime = timestamp_to_filetime(stats.st_atime)
+    fileInfo.LastWriteTime = timestamp_to_filetime(stats.st_mtime)
+    fileInfo.ChangeTime = timestamp_to_filetime(stats.st_mtime)
     fileInfo.FileAttributes = stats.st_file_attributes
     if not os.path.isfile(path):
         fileInfo.IsDirectory = True

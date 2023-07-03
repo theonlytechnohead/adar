@@ -7,7 +7,7 @@ import storage_backing
 import storage_sync
 
 from constants import *
-from peers import *
+from peer import *
 
 
 class Storage(Operations):

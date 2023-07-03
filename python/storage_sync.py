@@ -6,7 +6,7 @@ import storage_backing
 
 from enum import Enum, auto
 from constants import *
-from peers import *
+from peer import *
 
 # ASCII unit separator control character
 SEP = "\x1f"
