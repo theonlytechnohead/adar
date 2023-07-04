@@ -90,7 +90,14 @@ class AdarHandler(socketserver.StreamRequestHandler):
                                 print(coefficient, bits)
                                 decoder.consume_packet(coefficient, bits)
                             print(decoder.is_fully_decoded())
-                            storage_sync.write_local(path, start, length, data)
+                            output = bytearray()
+                            for packet in decoder.packet_vector:
+                                packet = int("".join(map(str, packet)), 2)
+                                print(packet)
+                                output.extend((packet,))
+                            output = bytes(output)
+                            print(output)
+                            storage_sync.write_local(path, start, length, output)
                         case storage_sync.Command.REMOVE:
                             path = arguments
                             storage_sync.remove_local(path)
