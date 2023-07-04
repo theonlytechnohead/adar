@@ -80,13 +80,17 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         case storage_sync.Command.WRITE:
                             path, start, length, _, _ = arguments.split(storage_sync.SEP)
                             _, _, _, cata, data = self.raw_data.split(storage_sync.SEP.encode())
+                            start = int(start)
+                            length = int(length)
                             decoder = BinaryCoder(int(length), 8, 1)
+                            print("\n")
                             for coefficient, byte in zip(cata, data):
-                                coefficient = [coefficient >> i & 1 for i in range(int(length) - 1, -1, -1)]
-                                bits = [byte >> i & 1 for i in range(decoder.num_bit_packet - 1, -1, -1)]
+                                coefficient = [coefficient >> i & 1 for i in range(length - 1, -1, -1)]
+                                bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
                                 print(coefficient, bits)
                                 decoder.consume_packet(coefficient, bits)
-                            storage_sync.write_local(path, int(start), int(length), data)
+                            print(decoder.is_fully_decoded())
+                            storage_sync.write_local(path, start, length, data)
                         case storage_sync.Command.REMOVE:
                             path = arguments
                             storage_sync.remove_local(path)
