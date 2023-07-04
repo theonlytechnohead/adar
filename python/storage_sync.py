@@ -69,7 +69,6 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 			data = bytearray()
 			while not decoder.is_fully_decoded():
 				coefficient, packet = encoder.get_new_coded_packet()
-				print(coefficient, packet)
 				decoder.consume_packet(coefficient, packet)
 				coefficient = int("".join(map(str, coefficient)), 2)
 				packet = int("".join(map(str, packet)), 2)

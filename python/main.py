@@ -83,20 +83,16 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             start = int(start)
                             length = int(length)
                             decoder = BinaryCoder(int(length), 8, 1)
-                            print("\n")
+                            print()
                             for coefficient, byte in zip(cata, data):
                                 coefficient = [coefficient >> i & 1 for i in range(length - 1, -1, -1)]
                                 bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
-                                print(coefficient, bits)
                                 decoder.consume_packet(coefficient, bits)
-                            print(decoder.is_fully_decoded())
                             output = bytearray()
                             for packet in decoder.packet_vector:
                                 packet = int("".join(map(str, packet)), 2)
-                                print(packet)
                                 output.extend((packet,))
                             output = bytes(output)
-                            print(output)
                             storage_sync.write_local(path, start, length, output)
                         case storage_sync.Command.REMOVE:
                             path = arguments
