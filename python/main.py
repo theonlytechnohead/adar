@@ -82,7 +82,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             _, _, _, cata, data = self.raw_data.split(storage_sync.SEP.encode())
                             decoder = BinaryCoder(int(length), 8, 1)
                             for coefficient, byte in zip(cata, data):
-                                coefficient = [coefficient >> i & 1 for i in range(decoder.num_bit_packet - 1, -1, -1)]
+                                coefficient = [coefficient >> i & 1 for i in range(int(length) - 1, -1, -1)]
                                 bits = [byte >> i & 1 for i in range(decoder.num_bit_packet - 1, -1, -1)]
                                 print(coefficient, bits)
                                 decoder.consume_packet(coefficient, bits)

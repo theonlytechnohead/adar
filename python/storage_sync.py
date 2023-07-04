@@ -59,19 +59,28 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 			length = kwargs["length"]
 			payload: bytes
 			encoder = BinaryCoder(length, 8, 1)
+			decoder = BinaryCoder(length, 8, 1)
 			for i, byte in enumerate(payload):
 				coefficients = [0] * len(payload)
 				coefficients[i] = 1
 				bits = [byte >> i & 1 for i in range(encoder.num_bit_packet - 1, -1, -1)]
 				encoder.consume_packet(coefficients, bits)
-			cata = bytearray(len(payload))
-			data = bytearray(len(payload))
-			for i in range(len(payload)):
+			cata = None
+			data = None
+			while not decoder.is_fully_decoded():
 				coefficient, packet = encoder.get_new_coded_packet()
+				print(coefficient, packet)
+				decoder.consume_packet(coefficient, packet)
 				coefficient = int("".join(map(str, coefficient)), 2)
 				packet = int("".join(map(str, packet)), 2)
-				cata[i:i+1] = coefficient,
-				data[i:i+1] = packet,
+				if not cata:
+					cata = bytearray((coefficient,))
+				else:
+					cata.extend((coefficient,))
+				if not data:
+					data = bytearray((packet,))
+				else:
+					data.extend((packet,))
 			cata = bytes(cata)
 			data = bytes(data)
 			output = f"{Command.WRITE.value}:{path}{SEP}{start}{SEP}{length}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
