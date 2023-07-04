@@ -4,6 +4,7 @@ import threading
 
 import storage_backing
 
+from simplenc import BinaryCoder
 from enum import Enum, auto
 from constants import *
 from peer import *
@@ -20,6 +21,7 @@ class Command(Enum):
 	RENAME = auto()
 	WRITE = auto()
 	REMOVE = auto()
+	REQUEST = auto()
 
 
 def pton(path: str) -> pathlib.PurePosixPath:
@@ -55,7 +57,26 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 		case Command.WRITE:
 			start = kwargs["start"]
 			length = kwargs["length"]
-			output = f"{Command.WRITE.value}:{path}{SEP}{start}{SEP}{length}{SEP}{payload.decode()}\n".encode()
+			payload: bytes
+			encoder = BinaryCoder(length, 8, 1)
+			decoder = BinaryCoder(length, 8, 1)
+			for i, byte in enumerate(payload):
+				coefficient = [0] * len(payload)
+				coefficient[i] = 1
+				bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
+				encoder.consume_packet(coefficient, bits)
+			cata = bytearray()
+			data = bytearray()
+			while not decoder.is_fully_decoded():
+				coefficient, packet = encoder.get_new_coded_packet()
+				decoder.consume_packet(coefficient, packet)
+				coefficient = int("".join(map(str, coefficient)), 2)
+				packet = int("".join(map(str, packet)), 2)
+				cata.extend((coefficient,))
+				data.extend((packet,))
+			cata = bytes(cata)
+			data = bytes(data)
+			output = f"{Command.WRITE.value}:{path}{SEP}{start}{SEP}{length}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
 		case Command.REMOVE:
 			output = f"{Command.REMOVE.value}:{path}\n".encode()
 	peer.connection.sendall(output)

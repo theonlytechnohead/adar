@@ -6,6 +6,7 @@ import threading
 from time import sleep
 
 import storage_sync
+from simplenc import BinaryCoder
 from advertise import *
 from constants import *
 from peer import *
@@ -23,8 +24,12 @@ class AdarHandler(socketserver.StreamRequestHandler):
             except select.error as e:
                 print(f"Socket error {e}, closing...")
                 break
-            if 0 < len(readable) and 0 < len(writable):
-                self.raw_data = self.rfile.readline(2048)
+            if readable and writable:
+                try:
+                    self.raw_data = self.rfile.readline(2048)
+                except:
+                    # socket closed unexpectedly
+                    break
                 if 0 == len(self.raw_data):
                     sleep(1)
                     continue
@@ -73,9 +78,22 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             path, new_path = arguments.split(storage_sync.SEP)
                             storage_sync.rename_local(path, new_path)
                         case storage_sync.Command.WRITE:
-                            path, start, length, _ = arguments.split(storage_sync.SEP)
-                            _, _, _, data = self.raw_data.split(storage_sync.SEP.encode())
-                            storage_sync.write_local(path, int(start), int(length), data)
+                            path, start, length, _, _ = arguments.split(storage_sync.SEP)
+                            _, _, _, cata, data = self.raw_data.split(storage_sync.SEP.encode())
+                            start = int(start)
+                            length = int(length)
+                            decoder = BinaryCoder(int(length), 8, 1)
+                            print()
+                            for coefficient, byte in zip(cata, data):
+                                coefficient = [coefficient >> i & 1 for i in range(length - 1, -1, -1)]
+                                bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
+                                decoder.consume_packet(coefficient, bits)
+                            output = bytearray()
+                            for packet in decoder.packet_vector:
+                                packet = int("".join(map(str, packet)), 2)
+                                output.extend((packet,))
+                            output = bytes(output)
+                            storage_sync.write_local(path, start, length, output)
                         case storage_sync.Command.REMOVE:
                             path = arguments
                             storage_sync.remove_local(path)
