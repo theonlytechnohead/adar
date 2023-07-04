@@ -6,6 +6,7 @@ import threading
 from time import sleep
 
 import storage_sync
+from simplenc import BinaryCoder
 from advertise import *
 from constants import *
 from peer import *
@@ -77,8 +78,14 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             path, new_path = arguments.split(storage_sync.SEP)
                             storage_sync.rename_local(path, new_path)
                         case storage_sync.Command.WRITE:
-                            path, start, length, _ = arguments.split(storage_sync.SEP)
-                            _, _, _, data = self.raw_data.split(storage_sync.SEP.encode())
+                            path, start, length, _, _ = arguments.split(storage_sync.SEP)
+                            _, _, _, cata, data = self.raw_data.split(storage_sync.SEP.encode())
+                            decoder = BinaryCoder(int(length), 8, 1)
+                            for coefficient, byte in zip(cata, data):
+                                coefficient = [coefficient >> i & 1 for i in range(decoder.num_bit_packet - 1, -1, -1)]
+                                bits = [byte >> i & 1 for i in range(decoder.num_bit_packet - 1, -1, -1)]
+                                print(coefficient, bits)
+                                decoder.consume_packet(coefficient, bits)
                             storage_sync.write_local(path, int(start), int(length), data)
                         case storage_sync.Command.REMOVE:
                             path = arguments
