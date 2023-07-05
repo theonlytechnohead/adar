@@ -16,10 +16,9 @@ class AdarListener(ServiceListener):
         if info.properties[b"uuid"].decode() != ID:
             friendlyname = name.removesuffix(f".{SERVICE}")
             peer = add_peer(info)
-            print(f"Service discovered: {peer.service_name}")
-            if paired:= check_pair(peer):
-                print("\t(already paired)")
-            else:
+            print(f"Discovered {friendlyname}")
+            paired = check_pair(peer)
+            if not paired:
                 paired = pair(friendlyname, peer)
             if paired:
                 connect(peer)
@@ -32,7 +31,7 @@ class AdarListener(ServiceListener):
     def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         if name == this_name:
             return
-        print(f"Service disappeared: {name}")
+        print(f"{name} disappeared")
         index = None
         for i, p in enumerate(peer_list):
             if p.service_name == name:
