@@ -43,9 +43,8 @@ def check_pair(peer: Peer) -> bool:
 
 def request_pair(peer: Peer) -> bool:
     address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
-    print(f"\tconnecting to {address}")
+    print(f"\tpairing to {address}")
     connection = socket.create_connection((address, PORT))
-    print(f"\tconnected to {connection.getpeername()[0]}")
     if connection.getpeername()[0] not in peer.addresses:
         connection.shutdown(socket.SHUT_RDWR)
         connection.close()
@@ -70,11 +69,11 @@ def pair(name: str, peer: Peer) -> bool:
     confirm = input(f"Do you want to pair with {name}? [Y/n] ")
     if confirm.lower() == "y" or confirm == "":
         if request_pair(peer):
-            print("Pairing accepted")
+            print("\tPaired!")
             store_peer(peer)
             return True
         else:
-            print("Pairing failed")
+            print("\tPairing failed")
     return False
 
 
@@ -85,9 +84,9 @@ def connect(peer: Peer):
         print(f"\tconnected to {peer.connection.getpeername()[0]}")
     else:
         address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
-        print(f"\tconnecting to {address}")
+        print(f"\tconnecting to\t{address}")
         connection = socket.create_connection((address, PORT))
-        print(f"\tconnected to {connection.getpeername()[0]}")
+        print(f"\tconnected to\t{connection.getpeername()[0]}")
         if connection.getpeername()[0] not in peer.addresses:
             connection.shutdown(socket.SHUT_RDWR)
             connection.close()
