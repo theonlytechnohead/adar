@@ -222,7 +222,7 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
         case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_MODIFIED:
             if DEBUG:
                 print(
-                    f"close w/ modification: {callbackData.contents.FilePathname}")
+                    f"close w/ modification: {callbackData.contents.FilePathName}")
             # https://stackoverflow.com/questions/55069340/windows-projected-file-system-read-only
             # writes always convert a placeholder into a "full" file (but we still get notifications, etc.)
             # so we need to be notified of this and rewrite the modified file into the backing store

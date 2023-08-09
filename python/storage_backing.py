@@ -71,7 +71,11 @@ def rename(path: str, new_path: str):
 		for root in ROOT_POINTS:
 			root_path = os.path.join(root, path)
 			root_new_path = os.path.join(root, new_path)
-			os.rename(root_path, root_new_path)
+			try:
+				os.rename(root_path, root_new_path)
+			except FileExistsError:
+				# something went wrong, it's probably not our fault though - ignore
+				return
 
 
 def write(path: str, start: int, length: int, data: bytes, **kwargs):
@@ -87,9 +91,13 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 	if os.name == "nt":
 		# TODO: is this really necessary? it seems to help by fixing the file size and doing placeholdery stuff that hints the OS what's happened
 		real_path = kwargs["real_path"]
-		with open(real_path, "wb") as file:
-			file.seek(start)
-			file.write(data)
+		try:
+			with open(real_path, "wb") as file:
+				file.seek(start)
+				file.write(data)
+		except PermissionError:
+			# we aren't allowed to read this file (yet?), just ignore it
+			return
 		written = 0
 		files = []
 		for root in ROOT_POINTS:
