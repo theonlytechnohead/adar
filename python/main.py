@@ -104,19 +104,25 @@ class AdarHandler(socketserver.StreamRequestHandler):
                 self.wfile.write(self.data)
 
 
-class AdarDataHandler(socketserver.DatagramRequestHandler):
-    def handle(self) -> None:
-        pass
+class AdarDataHandler():
+    def __init__(self, address: tuple) -> None:
+        self.connection = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+        self.connection.bind(address)
+        self.stop = False
 
+    def handle(self) -> None:
+        while not self.stop:
+            message, address = self.connection.recvfrom(2048)
+            print(message.decode())
+            self.connection.sendto(message, address)
+        self.connection.shutdown(socket.SHUT_RDWR)
+        self.connection.close()
+    
+    def shutdown(self):
+        self.stop = True
 
 
 class dual_stack(socketserver.ThreadingTCPServer):
-    def server_bind(self) -> None:
-        self.socket = socket.create_server(
-            self.server_address, family=socket.AF_INET6, dualstack_ipv6=True)
-
-
-class dual_stack_data(socketserver.ThreadingUDPServer):
     def server_bind(self) -> None:
         self.socket = socket.create_server(
             self.server_address, family=socket.AF_INET6, dualstack_ipv6=True)
@@ -152,9 +158,9 @@ if __name__ == "__main__":
         storage = threading.Thread(target=storage_projected.create)
         storage.start()
     adar = dual_stack(("::", PORT), AdarHandler)
-    adar_data = dual_stack(("::", DATA_PORT), AdarDataHandler)
+    adar_data = AdarDataHandler(("", DATA_PORT))
     server = threading.Thread(target=adar.serve_forever)
-    data_server = threading.Thread(target=adar_data.serve_forever)
+    data_server = threading.Thread(target=adar_data.handle, daemon=True)
     server.start()
     data_server.start()
     service = advertise()
