@@ -2,6 +2,7 @@ import machineid
 
 ID = machineid.id().strip()
 PORT = 6780
+DATA_PORT = 6781
 SERVICE = "_adar._tcp.local."
 
 MOUNT_POINT = "mount"

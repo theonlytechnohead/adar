@@ -71,12 +71,14 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         case storage_sync.Command.CREATE:
                             path, directory = arguments.split(storage_sync.SEP)
                             storage_sync.create_local(path, bool(int(directory)))
+                            self.data = "".encode()
                         case storage_sync.Command.READ:
                             path, start, length = arguments.split(storage_sync.SEP)
-                            storage_sync.read_local(path, int(start), int(length))
+                            self.data = storage_sync.read_local(path, int(start), int(length))
                         case storage_sync.Command.RENAME:
                             path, new_path = arguments.split(storage_sync.SEP)
                             storage_sync.rename_local(path, new_path)
+                            self.data = "".encode()
                         case storage_sync.Command.WRITE:
                             path, start, length, _, _ = arguments.split(storage_sync.SEP)
                             _, _, _, cata, data = self.raw_data.split(storage_sync.SEP.encode())
@@ -94,14 +96,27 @@ class AdarHandler(socketserver.StreamRequestHandler):
                                 output.extend((packet,))
                             output = bytes(output)
                             storage_sync.write_local(path, start, length, output)
+                            self.data = "".encode()
                         case storage_sync.Command.REMOVE:
                             path = arguments
                             storage_sync.remove_local(path)
-                    self.data = bytes(self.data.upper(), "utf-8")
+                            self.data = "".encode()
                 self.wfile.write(self.data)
 
 
+class AdarDataHandler(socketserver.DatagramRequestHandler):
+    def handle(self) -> None:
+        pass
+
+
+
 class dual_stack(socketserver.ThreadingTCPServer):
+    def server_bind(self) -> None:
+        self.socket = socket.create_server(
+            self.server_address, family=socket.AF_INET6, dualstack_ipv6=True)
+
+
+class dual_stack_data(socketserver.ThreadingUDPServer):
     def server_bind(self) -> None:
         self.socket = socket.create_server(
             self.server_address, family=socket.AF_INET6, dualstack_ipv6=True)
@@ -112,6 +127,7 @@ def handle(signum, frame):
     print("\rStopping...", end="")
     service.close()
     adar.shutdown()
+    adar_data.shutdown()
     for peer in peer_list:
         if peer.connection != None:
             peer.connection.shutdown(2)
@@ -136,8 +152,11 @@ if __name__ == "__main__":
         storage = threading.Thread(target=storage_projected.create)
         storage.start()
     adar = dual_stack(("::", PORT), AdarHandler)
+    adar_data = dual_stack(("::", DATA_PORT), AdarDataHandler)
     server = threading.Thread(target=adar.serve_forever)
+    data_server = threading.Thread(target=adar_data.serve_forever)
     server.start()
+    data_server.start()
     service = advertise()
     while not stop:
         sleep(1)

@@ -18,10 +18,10 @@ DEBUG = True
 class Command(Enum):
 	CREATE = auto()
 	READ = auto()
+	DATA = auto()
 	RENAME = auto()
 	WRITE = auto()
 	REMOVE = auto()
-	REQUEST = auto()
 
 
 def pton(path: str) -> pathlib.PurePosixPath:
@@ -136,7 +136,8 @@ def read_local(path: str, start: int, length: int) -> bytes:
 	if os.name == "nt":
 		path = ntop(path, False)
 	if DEBUG: print(f"reading local {path} ({start}->{start+length})")
-	return storage_backing.read(path, start, length)
+	data = storage_backing.read_file(path, start, length)
+	return f"{Command.DATA.value}:{path}{SEP}{start}{SEP}{length}{SEP}{data}\n".encode()
 
 
 def rename_local(path: str, new_path: str):
