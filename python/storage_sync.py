@@ -79,8 +79,15 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 			output = f"{Command.WRITE.value}:{path}{SEP}{start}{SEP}{length}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
 		case Command.REMOVE:
 			output = f"{Command.REMOVE.value}:{path}\n".encode()
-	peer.connection.sendall(output)
+	if command in (Command.READ, Command.WRITE):
+		peer.data_connection.sendto(output, peer.data_address)
+	else:
+		peer.connection.sendall(output)
 	if command == Command.READ:
+		try:
+			data, server = peer.data_connection.recvfrom(2048)
+		except TimeoutError:
+			pass
 		return 0, bytes()
 
 
