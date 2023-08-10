@@ -104,6 +104,12 @@ class AdarHandler(socketserver.StreamRequestHandler):
                 self.wfile.write(self.data)
 
 
+class dual_stack(socketserver.ThreadingTCPServer):
+    def server_bind(self) -> None:
+        self.socket = socket.create_server(
+            self.server_address, family=socket.AF_INET6, dualstack_ipv6=True)
+
+
 class AdarDataHandler():
     def __init__(self, address: tuple) -> None:
         self.connection = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
@@ -112,20 +118,51 @@ class AdarDataHandler():
 
     def handle(self) -> None:
         while not self.stop:
-            message, address = self.connection.recvfrom(2048)
-            print(message.decode())
-            self.connection.sendto(message, address)
+            self.handle_connection()
         self.connection.shutdown(socket.SHUT_RDWR)
         self.connection.close()
     
+    def handle_connection(self):
+        message, address = self.connection.recvfrom(2048)
+        try:
+            valid = message.decode().endswith("\n")
+        except UnicodeDecodeError as e:
+            # error, invalid message!
+            print(f"Caught a UnicodeDecodeError: {e.reason}")
+            return
+        if not valid:
+            # error, invalid message!
+            print(f"Message is invalid!")
+            print(message)
+            return
+        print(message.decode())
+        command = storage_sync.Command(int(message.split(":", 1)[0]))
+        arguments = message.strip().split(":", 1)[1]
+        match command:
+            case storage_sync.Command.READ:
+                path, start, length = arguments.split(storage_sync.SEP)
+                data = storage_sync.read_local(path, int(start), int(length))
+                self.connection.sendto(data, address)
+            case storage_sync.Command.WRITE:
+                path, start, length, _, _ = arguments.split(storage_sync.SEP)
+                _, _, _, cata, data = message.split(storage_sync.SEP.encode())
+                start = int(start)
+                length = int(length)
+                decoder = BinaryCoder(int(length), 8, 1)
+                print()
+                for coefficient, byte in zip(cata, data):
+                    coefficient = [coefficient >> i & 1 for i in range(length - 1, -1, -1)]
+                    bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
+                    decoder.consume_packet(coefficient, bits)
+                data = bytearray()
+                for packet in decoder.packet_vector:
+                    packet = int("".join(map(str, packet)), 2)
+                    data.extend((packet,))
+                data = bytes(data)
+                storage_sync.write_local(path, start, length, data)
+    
     def shutdown(self):
         self.stop = True
-
-
-class dual_stack(socketserver.ThreadingTCPServer):
-    def server_bind(self) -> None:
-        self.socket = socket.create_server(
-            self.server_address, family=socket.AF_INET6, dualstack_ipv6=True)
 
 
 def handle(signum, frame):
