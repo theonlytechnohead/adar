@@ -1,6 +1,7 @@
 import os
 import pathlib
 import threading
+from time import sleep
 
 import storage_backing
 
@@ -13,6 +14,8 @@ from peer import *
 SEP = "\x1f"
 
 DEBUG = True
+
+reads = {}
 
 
 class Command(Enum):
@@ -50,23 +53,18 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 		case Command.CREATE:
 			output = f"{Command.CREATE.value}:{path}{SEP}{payload}\n".encode()
 		case Command.READ:
-			"""Send a read request for a file over UDP"""
 			length = kwargs["length"]
+			reads[str(path)] = bytearray(length)
 			output = f"{Command.READ.value}:{path}{SEP}{payload}{SEP}{length}\n".encode()
 		case Command.RENAME:
 			output = f"{Command.RENAME.value}:{path}{SEP}{payload}\n".encode()
 		case Command.REMOVE:
 			output = f"{Command.REMOVE.value}:{path}\n".encode()
 	if command == Command.READ:
+		"""Send a read request for a file over UDP"""
 		peer.data_connection.sendto(output, peer.data_address)
 	else:
 		peer.connection.sendall(output)
-	if command == Command.READ:
-		try:
-			data, server = peer.data_connection.recvfrom(2048)
-		except TimeoutError:
-			pass
-		return 0, bytes()
 
 
 @thread
@@ -107,12 +105,14 @@ def create(path: str, directory: bool):
 def read(path: str, start: int, length: int) -> bytes:
 	path = pton(path)
 	if DEBUG: print(f"reading {path} ({start}->{start+length})")
-	output = bytearray(length)
 	for peer in peer_list:
-		# TODO: this occurs asynchronously, need to handle
 		transmit(peer, Command.READ, path, start, length=length)
-		# output[index:index + 1] = byte
-	return bytes(output)
+	# TODO: switch to events rather than polling?
+	while type(reads[str(path)]) == bytearray:
+		sleep(0.001)
+	data = bytes(reads[str(path)])
+	del reads[str(path)]
+	return data
 
 
 def rename(path: str, new_path: str):

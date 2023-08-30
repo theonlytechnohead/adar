@@ -178,7 +178,7 @@ def get_file_data(callbackData, byteOffset, length):
         contents = read_file(
             callbackData.contents.FilePathName, byteOffset, length)
         # TODO: actually use this data
-        storage_sync.read(callbackData.contents.FilePathName, byteOffset, length)
+        network_contents = storage_sync.read(callbackData.contents.FilePathName, byteOffset, length)
         writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(
             callbackData.contents.NamespaceVirtualizationContext, length)
         if not writeBuffer:

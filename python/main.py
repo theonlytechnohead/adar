@@ -178,7 +178,8 @@ class AdarDataHandler():
                     packet = int("".join(map(str, packet)), 2)
                     data.extend((packet,))
                 data = bytes(data)
-                print("UDP", f"got data: {path} ({start}->{length})", data)
+                print("UDP", f"got data: {path} ({start}->{start+length})", data)
+                storage_sync.reads[path] = data
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
                 path, start, length, _, _ = arguments.split(storage_sync.SEP)
