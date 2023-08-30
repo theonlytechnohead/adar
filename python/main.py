@@ -50,6 +50,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                 if self.data == "pair?":
                     self.data = b"sure"
                 elif self.data.startswith("key?"):
+                    print(f"Received peer request from {self.client_address}, identifying...")
                     peer: Peer = None
                     while peer == None:
                         for p in peer_list:
@@ -57,6 +58,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                                 peer = p
                                 break
                         sleep(1)
+                    print(f"Identified peer: {peer.fqdn}")
                     if peer.generator == None:
                         peer.generator = DiffieHellman(group=14, key_bits=1024)
                     public_key = peer.generator.get_public_key()
@@ -119,11 +121,12 @@ class AdarDataHandler():
     def handle(self) -> None:
         while not self.stop:
             self.handle_connection()
-        self.connection.shutdown(socket.SHUT_RDWR)
-        self.connection.close()
     
     def handle_connection(self):
-        message, address = self.connection.recvfrom(2048)
+        try:
+            message, address = self.connection.recvfrom(2048)
+        except OSError:
+            return
         try:
             valid = message.decode().endswith("\n")
         except UnicodeDecodeError as e:
@@ -166,6 +169,8 @@ class AdarDataHandler():
     
     def shutdown(self):
         self.stop = True
+        self.connection.shutdown(socket.SHUT_RDWR)
+        self.connection.close()
 
 
 def handle(signum, frame):
@@ -176,7 +181,7 @@ def handle(signum, frame):
     adar_data.shutdown()
     for peer in peer_list:
         if peer.connection != None:
-            peer.connection.shutdown(2)
+            peer.connection.shutdown(socket.SHUT_RDWR)
             peer.connection.close()
     if os.name == "posix":
         storage_fuse.destroy()
