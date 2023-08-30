@@ -109,8 +109,9 @@ def read(path: str, start: int, length: int) -> bytes:
 	if DEBUG: print(f"reading {path} ({start}->{start+length})")
 	output = bytearray(length)
 	for peer in peer_list:
-		index, byte = transmit(peer, Command.READ, path, start, length=length)
-		output[index:index + 1] = byte
+		# TODO: this occurs asynchronously, need to handle
+		transmit(peer, Command.READ, path, start, length=length)
+		# output[index:index + 1] = byte
 	return bytes(output)
 
 

@@ -14,6 +14,16 @@ from peer import *
 stop = False
 
 
+def identify_peer(address: str, timeout: int = 10):
+    peer: Peer = None
+    while peer == None and timeout != 0:
+        for p in peer_list:
+            if address in p.addresses:
+                return p
+        sleep(1)
+        timeout -= 1
+
+
 class AdarHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
         self.connection: socket.socket
@@ -51,15 +61,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     self.data = b"sure"
                 elif self.data.startswith("key?"):
                     print(f"\tpeer request from {self.client_address[0]}, identifying...")
-                    timeout = 10
-                    peer: Peer = None
-                    while peer == None and timeout != 0:
-                        for p in peer_list:
-                            if self.client_address[0] in p.addresses:
-                                peer = p
-                                break
-                        sleep(1)
-                        timeout -= 1
+                    peer = identify_peer(self.client_address[0])
                     if peer == None:
                         print("\ttimed out trying to identify")
                         continue
@@ -149,10 +151,13 @@ class AdarDataHandler():
         match command:
             case storage_sync.Command.READ:
                 """Received a read request, respond with network-coded data"""
+                peer = identify_peer(address)
+                if peer == None:
+                    return
                 path, start, length = arguments.split(storage_sync.SEP)
                 data = storage_sync.read_local(path, int(start), int(length))
                 # f"{Command.DATA.value}:{path}{SEP}{start}{SEP}{length}{SEP}{data}\n".encode()
-                storage_sync.transmit_data(None, storage_sync.Command.DATA, path, data, start=start, length=length)
+                storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=start, length=length)
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
                 path, start, length, _, _ = arguments.split(storage_sync.SEP)
