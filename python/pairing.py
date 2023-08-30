@@ -4,7 +4,7 @@ import socket
 from diffiehellman import DiffieHellman
 from zeroconf import ServiceInfo, IPVersion
 
-from constants import PORT
+from constants import PORT, DATA_PORT
 from peer import *
 
 
@@ -99,3 +99,7 @@ def connect(peer: Peer):
     other_key = base64.b64decode(data[4:-1])
     peer.shared_key = peer.generator.generate_shared_key(other_key)
     store_peer(peer)
+
+    peer.data_connection = socket.socket(peer.connection.family, socket.SOCK_DGRAM)
+    peer.data_connection.settimeout(1)  # seconds
+    peer.data_address = (peer.connection.getpeername()[0], DATA_PORT)

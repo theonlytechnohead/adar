@@ -13,6 +13,8 @@ class Peer:
     generator = None
     shared_key = bytes()
     connection: socket.socket = None
+    data_address: tuple() = None
+    data_connection: socket.socket = None
 
 
 peer_list: list[Peer] = []

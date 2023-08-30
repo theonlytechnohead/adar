@@ -177,7 +177,8 @@ def get_file_data(callbackData, byteOffset, length):
             return E_INVALIDARG
         contents = read_file(
             callbackData.contents.FilePathName, byteOffset, length)
-        storage_sync.read(callbackData.contents.FilePathName, byteOffset, length)
+        # TODO: actually use this data
+        network_contents = storage_sync.read(callbackData.contents.FilePathName, byteOffset, length)
         writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(
             callbackData.contents.NamespaceVirtualizationContext, length)
         if not writeBuffer:
