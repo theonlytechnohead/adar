@@ -158,8 +158,10 @@ class AdarDataHandler():
                     return
                 print("UDP", f"fulfilling read request for {peer.service_name.removesuffix(SERVICE)[:-1]}")
                 path, start, length = arguments.split(storage_sync.SEP)
-                data = storage_sync.read_local(path, int(start), int(length))
-                storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=int(start), length=int(length))
+                start = int(start)
+                length = int(length)
+                data = storage_sync.read_local(path, start, length)
+                storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=start, length=length)
             case storage_sync.Command.DATA:
                 """Received data, presumably linked to a read request"""
                 print("UDP", "got data!")

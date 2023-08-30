@@ -59,7 +59,7 @@ def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 				read += 1
 		for file in files:
 			file.close()
-		return bytes(output)
+		return bytes(output)[start:length]
 
 
 def rename(path: str, new_path: str):
