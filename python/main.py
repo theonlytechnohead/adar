@@ -50,15 +50,20 @@ class AdarHandler(socketserver.StreamRequestHandler):
                 if self.data == "pair?":
                     self.data = b"sure"
                 elif self.data.startswith("key?"):
-                    print(f"Received peer request from {self.client_address}, identifying...")
+                    print(f"\tpeer request from {self.client_address[0]}, identifying...")
+                    timeout = 10
                     peer: Peer = None
-                    while peer == None:
+                    while peer == None and timeout != 0:
                         for p in peer_list:
                             if self.client_address[0] in p.addresses:
                                 peer = p
                                 break
                         sleep(1)
-                    print(f"Identified peer: {peer.fqdn}")
+                        timeout -= 1
+                    if peer == None:
+                        print("\ttimed out trying to identify")
+                        continue
+                    print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
                     if peer.generator == None:
                         peer.generator = DiffieHellman(group=14, key_bits=1024)
                     public_key = peer.generator.get_public_key()
