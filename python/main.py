@@ -164,7 +164,21 @@ class AdarDataHandler():
                 storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=start, length=length)
             case storage_sync.Command.DATA:
                 """Received data, presumably linked to a read request"""
-                print("UDP", "got data!")
+                path, start, length, _, _ = arguments.split(storage_sync.SEP)
+                _, _, _, cata, data = message.split(storage_sync.SEP.encode())
+                start = int(start)
+                length = int(length)
+                decoder = BinaryCoder(int(length), 8, 1)
+                for coefficient, byte in zip(cata, data):
+                    coefficient = [coefficient >> i & 1 for i in range(length - 1, -1, -1)]
+                    bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
+                    decoder.consume_packet(coefficient, bits)
+                data = bytearray()
+                for packet in decoder.packet_vector:
+                    packet = int("".join(map(str, packet)), 2)
+                    data.extend((packet,))
+                data = bytes(data)
+                print("UDP", f"got data: {path} ({start}->{length})", data)
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
                 path, start, length, _, _ = arguments.split(storage_sync.SEP)
