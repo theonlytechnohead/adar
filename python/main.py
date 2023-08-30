@@ -140,10 +140,13 @@ class AdarDataHandler():
         arguments = message.strip().split(":", 1)[1]
         match command:
             case storage_sync.Command.READ:
+                """Received a read request, respond with network-coded data"""
                 path, start, length = arguments.split(storage_sync.SEP)
                 data = storage_sync.read_local(path, int(start), int(length))
-                self.connection.sendto(data, address)
+                # f"{Command.DATA.value}:{path}{SEP}{start}{SEP}{length}{SEP}{data}\n".encode()
+                storage_sync.transmit_data(None, storage_sync.Command.DATA, path, data, start=start, length=length)
             case storage_sync.Command.WRITE:
+                """Received a write command, process network-coded data"""
                 path, start, length, _, _ = arguments.split(storage_sync.SEP)
                 _, _, _, cata, data = message.split(storage_sync.SEP.encode())
                 start = int(start)

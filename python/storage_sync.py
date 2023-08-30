@@ -50,36 +50,14 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 		case Command.CREATE:
 			output = f"{Command.CREATE.value}:{path}{SEP}{payload}\n".encode()
 		case Command.READ:
+			"""Send a read request for a file over UDP"""
 			length = kwargs["length"]
 			output = f"{Command.READ.value}:{path}{SEP}{payload}{SEP}{length}\n".encode()
 		case Command.RENAME:
 			output = f"{Command.RENAME.value}:{path}{SEP}{payload}\n".encode()
-		case Command.WRITE:
-			start = kwargs["start"]
-			length = kwargs["length"]
-			payload: bytes
-			encoder = BinaryCoder(length, 8, 1)
-			decoder = BinaryCoder(length, 8, 1)
-			for i, byte in enumerate(payload):
-				coefficient = [0] * len(payload)
-				coefficient[i] = 1
-				bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
-				encoder.consume_packet(coefficient, bits)
-			cata = bytearray()
-			data = bytearray()
-			while not decoder.is_fully_decoded():
-				coefficient, packet = encoder.get_new_coded_packet()
-				decoder.consume_packet(coefficient, packet)
-				coefficient = int("".join(map(str, coefficient)), 2)
-				packet = int("".join(map(str, packet)), 2)
-				cata.extend((coefficient,))
-				data.extend((packet,))
-			cata = bytes(cata)
-			data = bytes(data)
-			output = f"{Command.WRITE.value}:{path}{SEP}{start}{SEP}{length}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
 		case Command.REMOVE:
 			output = f"{Command.REMOVE.value}:{path}\n".encode()
-	if command in (Command.READ, Command.WRITE):
+	if command == Command.READ:
 		peer.data_connection.sendto(output, peer.data_address)
 	else:
 		peer.connection.sendall(output)
@@ -89,6 +67,34 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 		except TimeoutError:
 			pass
 		return 0, bytes()
+
+
+@thread
+def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | str, payload = None, **kwargs):
+	"""Send a file, e.g. a write command, with network-coding and transmit over UDP"""
+	start = kwargs["start"]
+	length = kwargs["length"]
+	payload: bytes
+	encoder = BinaryCoder(length, 8, 1)
+	decoder = BinaryCoder(length, 8, 1)
+	for i, byte in enumerate(payload):
+		coefficient = [0] * len(payload)
+		coefficient[i] = 1
+		bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
+		encoder.consume_packet(coefficient, bits)
+	cata = bytearray()
+	data = bytearray()
+	while not decoder.is_fully_decoded():
+		coefficient, packet = encoder.get_new_coded_packet()
+		decoder.consume_packet(coefficient, packet)
+		coefficient = int("".join(map(str, coefficient)), 2)
+		packet = int("".join(map(str, packet)), 2)
+		cata.extend((coefficient,))
+		data.extend((packet,))
+	cata = bytes(cata)
+	data = bytes(data)
+	output = f"{command.value}:{path}{SEP}{start}{SEP}{length}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
+	peer.data_connection.sendto(output, peer.data_address)
 
 
 def create(path: str, directory: bool):
@@ -122,7 +128,7 @@ def write(path: str, start: int, data: bytes):
 	length = len(data)
 	if DEBUG: print(f"writing  {path} ({start}->{start+length}): {data}")
 	for peer in peer_list:
-		transmit(peer, Command.WRITE, path, data, start=start, length=length)
+		transmit_data(peer, Command.WRITE, path, data, start=start, length=length)
 
 
 def remove(path: str):
@@ -143,8 +149,7 @@ def read_local(path: str, start: int, length: int) -> bytes:
 	if os.name == "nt":
 		path = ntop(path, False)
 	if DEBUG: print(f"reading local {path} ({start}->{start+length})")
-	data = storage_backing.read_file(path, start, length)
-	return f"{Command.DATA.value}:{path}{SEP}{start}{SEP}{length}{SEP}{data}\n".encode()
+	return storage_backing.read_file(path, start, length)
 
 
 def rename_local(path: str, new_path: str):
