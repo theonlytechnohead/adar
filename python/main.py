@@ -81,30 +81,9 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             path, directory = arguments.split(storage_sync.SEP)
                             storage_sync.create_local(path, bool(int(directory)))
                             self.data = "".encode()
-                        case storage_sync.Command.READ:
-                            path, start, length = arguments.split(storage_sync.SEP)
-                            self.data = storage_sync.read_local(path, int(start), int(length))
                         case storage_sync.Command.RENAME:
                             path, new_path = arguments.split(storage_sync.SEP)
                             storage_sync.rename_local(path, new_path)
-                            self.data = "".encode()
-                        case storage_sync.Command.WRITE:
-                            path, start, length, _, _ = arguments.split(storage_sync.SEP)
-                            _, _, _, cata, data = self.raw_data.split(storage_sync.SEP.encode())
-                            start = int(start)
-                            length = int(length)
-                            decoder = BinaryCoder(int(length), 8, 1)
-                            print()
-                            for coefficient, byte in zip(cata, data):
-                                coefficient = [coefficient >> i & 1 for i in range(length - 1, -1, -1)]
-                                bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
-                                decoder.consume_packet(coefficient, bits)
-                            output = bytearray()
-                            for packet in decoder.packet_vector:
-                                packet = int("".join(map(str, packet)), 2)
-                                output.extend((packet,))
-                            output = bytes(output)
-                            storage_sync.write_local(path, start, length, output)
                             self.data = "".encode()
                         case storage_sync.Command.REMOVE:
                             path = arguments
