@@ -151,13 +151,18 @@ class AdarDataHandler():
         match command:
             case storage_sync.Command.READ:
                 """Received a read request, respond with network-coded data"""
-                peer = identify_peer(address)
+                print("UDP", f"received a read request from {address[0]}")
+                peer = identify_peer(address[0])
                 if peer == None:
+                    print("\ttimed out trying to identify")
                     return
+                print("UDP", f"fulfilling read request for {peer.service_name.removesuffix(SERVICE)[:-1]}")
                 path, start, length = arguments.split(storage_sync.SEP)
                 data = storage_sync.read_local(path, int(start), int(length))
-                # f"{Command.DATA.value}:{path}{SEP}{start}{SEP}{length}{SEP}{data}\n".encode()
-                storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=start, length=length)
+                storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=int(start), length=int(length))
+            case storage_sync.Command.DATA:
+                """Received data, presumably linked to a read request"""
+                print("UDP", "got data!")
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
                 path, start, length, _, _ = arguments.split(storage_sync.SEP)
