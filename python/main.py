@@ -42,7 +42,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     continue
                 if not valid:
                     # error, invalid message!
-                    print(f"Message is invalid!")
+                    print(f"TCP message is invalid:")
                     print(self.raw_data)
                     self.wfile.write(bytes("\n", "utf-8"))
                     continue
@@ -132,12 +132,12 @@ class AdarDataHandler():
             return
         if not valid:
             # error, invalid message!
-            print(f"Message is invalid!")
+            print(f"UDP message is invalid:")
             print(message)
             return
-        print(message.decode())
-        command = storage_sync.Command(int(message.split(":", 1)[0]))
-        arguments = message.strip().split(":", 1)[1]
+        print(address[0], message.decode())
+        command = storage_sync.Command(int(message.decode().split(":", 1)[0]))
+        arguments = message.decode().strip().split(":", 1)[1]
         match command:
             case storage_sync.Command.READ:
                 """Received a read request, respond with network-coded data"""
