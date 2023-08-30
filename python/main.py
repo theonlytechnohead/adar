@@ -71,7 +71,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     peer.shared_key = peer.generator.generate_shared_key(other_key)
                     self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
                 else:
-                    print(f"{self.client_address[0]}: {self.data}", end="\t")
+                    print("TCP", self.client_address[0], self.data)
                     command = storage_sync.Command(int(self.data.split(":", 1)[0]))
                     arguments = self.data.strip().split(":", 1)[1]
                     match command:
@@ -143,7 +143,7 @@ class AdarDataHandler():
             print(f"UDP message is invalid:")
             print(message)
             return
-        print(address[0], message.decode())
+        print("UDP", address[0], message.decode())
         command = storage_sync.Command(int(message.decode().split(":", 1)[0]))
         arguments = message.decode().strip().split(":", 1)[1]
         match command:
