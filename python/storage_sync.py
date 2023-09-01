@@ -97,6 +97,8 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 			folders, files = data.split(":")
 			folders = folders.split(SEP)
 			files = files.split(SEP)
+			folders = [folder for folder in folders if folder != ""]
+			files = [file for file in files if file != ""]
 			return folders, files
 		case Command.SIZE:
 			data = peer.connection.recv(1024)
@@ -133,20 +135,19 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	peer.data_connection.sendto(output, peer.data_address)
 
 
-@thread
-def sync():
-	"""Requests folders and files to replicate on the local backing"""
-	path = ""
-	folders, files = list("")
-	local_folders, local_files = list_local("")
-	print("remote:\t", folders, files)
-	print("local:\t", local_folders, local_files)
+def explore(path: str):
+	if DEBUG: print("exploring", path)
+	folders, files = list(path)
+	local_folders, local_files = list_local(path)
+	if DEBUG: print("\tremote:\t", folders, files)
+	if DEBUG: print("\tlocal:\t", local_folders, local_files)
+	explorable = []
 	for folder in folders:
+		folder = os.path.join(path, folder)
 		if folder not in local_folders:
-			folder = os.path.join(path, folder)
-			print("creating local folder:", folder)
+			if DEBUG: print("creating local folder:", folder)
 			create_local(folder, True)
-			# TODO: add folder to a list to explore
+		explorable.append(folder)
 	for file in files:
 		if file not in local_files:
 			file = os.path.join(path, file)
@@ -157,6 +158,22 @@ def sync():
 			if DEBUG: print(file, "size is", length, "bytes")
 			contents = read(file, 0, length)
 			write_local(file, 0, length, contents)
+	return explorable
+
+
+@thread
+def sync():
+	"""Requests folders and files to replicate on the local backing"""
+	path = ""
+	exploring = [path]
+	new = []
+	while exploring != []:
+		for n in exploring:
+			got = explore(os.path.join(path, n))
+			new.extend([folder for folder in got if folder not in new])
+			if n in new:
+				new.remove(n)
+		exploring = new
 
 
 def list(path: str):
