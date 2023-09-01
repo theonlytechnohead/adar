@@ -149,7 +149,7 @@ def remove(path: str):
 		transmit(peer, Command.REMOVE, path)
 
 
-def list_local(path: str) -> list[str]:
+def list_local(path: str):
 	if os.name == "nt":
 		path = ntop(path, False)
 	if DEBUG: print(f"listing local {path}")
