@@ -72,6 +72,8 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     other_key = base64.b64decode(self.raw_data[4:-1])
                     peer.shared_key = peer.generator.generate_shared_key(other_key)
                     self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
+                    # for testing
+                    storage_sync.list("")
                 else:
                     print("TCP", self.client_address[0], self.data)
                     command = storage_sync.Command(int(self.data.split(":", 1)[0]))
@@ -81,6 +83,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             path = arguments
                             # TODO: figure out how to return this value properly
                             listing = storage_sync.list_local(path)
+                            print(listing)
                             self.data = "".encode()
                         case storage_sync.Command.CREATE:
                             path, directory = arguments.split(storage_sync.SEP)
