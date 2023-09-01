@@ -69,7 +69,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 	else:
 		peer.connection.sendall(output)
 	if command == Command.LIST:
-		data = peer.connection.recv()
+		data = peer.connection.recv(1024)
 		print(data.decode())
 
 
