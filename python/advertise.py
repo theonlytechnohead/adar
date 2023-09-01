@@ -1,6 +1,7 @@
 import ipaddress
 import netifaces
 import socket
+from time import sleep
 from zeroconf import Zeroconf, ServiceListener, ServiceInfo, ServiceBrowser
 
 import storage_sync
@@ -26,6 +27,7 @@ class AdarListener(ServiceListener):
                 connect(peer)
                 short_key = "-".join(f"{int(bit):03d}" for bit in peer.shared_key[:2])
                 print(f"\tkey: {short_key}")
+                sleep(1)
                 storage_sync.sync()
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
