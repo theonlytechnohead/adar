@@ -5,6 +5,14 @@ import fec
 
 from constants import *
 
+def ls(path: str) -> list[str]:
+	if os.name == "posix":
+		pass
+	if os.name == "nt":
+		root_path = os.path.join(ROOT_POINTS[0], path)
+		return os.listdir(root_path)
+
+
 def create(path: str, directory: bool, **kwargs):
 	if os.name == "posix":
 		path = ROOT_POINT + path

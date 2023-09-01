@@ -77,6 +77,11 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     command = storage_sync.Command(int(self.data.split(":", 1)[0]))
                     arguments = self.data.strip().split(":", 1)[1]
                     match command:
+                        case storage_sync.Command.LIST:
+                            path = arguments
+                            # TODO: figure out how to return this value properly
+                            listing = storage_sync.list_local(path)
+                            self.data = "".encode()
                         case storage_sync.Command.CREATE:
                             path, directory = arguments.split(storage_sync.SEP)
                             storage_sync.create_local(path, bool(int(directory)))

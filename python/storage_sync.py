@@ -19,6 +19,7 @@ reads = {}
 
 
 class Command(Enum):
+	LIST = auto()
 	CREATE = auto()
 	READ = auto()
 	DATA = auto()
@@ -50,6 +51,8 @@ def thread(function):
 def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload = None, **kwargs):
 	output = "".encode()
 	match command:
+		case Command.LIST:
+			output = f"{Command.LIST.value}:{path}\n".encode()
 		case Command.CREATE:
 			output = f"{Command.CREATE.value}:{path}{SEP}{payload}\n".encode()
 		case Command.READ:
@@ -95,6 +98,13 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	peer.data_connection.sendto(output, peer.data_address)
 
 
+def list(path: str):
+	path = pton(path)
+	if DEBUG: print(f"requesting listing of {path}")
+	for peer in peer_list:
+		transmit(peer, Command.LIST, path)
+
+
 def create(path: str, directory: bool):
 	path = pton(path)
 	if DEBUG: print(f"creating {path} ({'folder' if directory else 'file'})")
@@ -137,6 +147,13 @@ def remove(path: str):
 	if DEBUG: print(f"removing {path}")
 	for peer in peer_list:
 		transmit(peer, Command.REMOVE, path)
+
+
+def list_local(path: str) -> list[str]:
+	if os.name == "nt":
+		path = ntop(path, False)
+	if DEBUG: print(f"listing local {path}")
+	return storage_backing.ls(path)
 
 
 def create_local(path: str, directory: bool):
