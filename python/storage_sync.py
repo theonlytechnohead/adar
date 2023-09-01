@@ -124,6 +124,30 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	peer.data_connection.sendto(output, peer.data_address)
 
 
+@thread
+def sync():
+	"""Requests folders and files to replicate on the local backing"""
+	path = ""
+	folders, files = list("")
+	local_folders, local_files = list_local("")
+	print("remote:\t", folders, files)
+	print("local:\t", local_folders, local_files)
+	for folder in folders:
+		if folder not in local_folders:
+			folder = os.path.join(path, folder)
+			print("creating local folder:", folder)
+			create_local(folder, True)
+			# add folder to a list to explore
+	for file in files:
+		if file not in local_files:
+			file = os.path.join(path, file)
+			print("creating local file:", file)
+			create_local(file, False)
+			print("requesting remote file:", file)
+			# TODO: need a "size" command
+			# TODO: get file contents and write to backing
+
+
 def list(path: str):
 	path = pton(path)
 	if DEBUG: print(f"requesting listing of {path}")
@@ -134,6 +158,7 @@ def list(path: str):
 		all_folders.extend(folders)
 		all_files.extend(files)
 	return all_folders, all_files
+
 
 def create(path: str, directory: bool):
 	path = pton(path)
