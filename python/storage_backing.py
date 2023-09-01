@@ -11,8 +11,8 @@ def ls(path: str):
 	if os.name == "nt":
 		root_path = os.path.join(ROOT_POINTS[0], path)
 		listing = os.listdir(root_path)
-		files = [f for f in listing if os.path.isfile(f)]
-		folders = [f for f in listing if os.path.isdir(f)]
+		files = [f for f in listing if os.path.isfile(os.path.join(root_path, f))]
+		folders = [f for f in listing if os.path.isdir(os.path.join(root_path, f))]
 		return folders, files
 
 

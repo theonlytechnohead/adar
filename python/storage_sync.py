@@ -68,6 +68,9 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 		peer.data_connection.sendto(output, peer.data_address)
 	else:
 		peer.connection.sendall(output)
+	if command == Command.LIST:
+		data = peer.connection.recv()
+		print(data.decode())
 
 
 @thread
