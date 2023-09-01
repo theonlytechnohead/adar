@@ -144,7 +144,7 @@ def explore(path: str):
 	explorable = []
 	for folder in folders:
 		folder = os.path.join(path, folder)
-		if folder not in local_folders:
+		if os.path.basename(folder) not in local_folders:
 			if DEBUG: print("creating local folder:", folder)
 			create_local(folder, True)
 		explorable.append(folder)
