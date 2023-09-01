@@ -146,16 +146,17 @@ def sync():
 			folder = os.path.join(path, folder)
 			print("creating local folder:", folder)
 			create_local(folder, True)
-			# add folder to a list to explore
+			# TODO: add folder to a list to explore
 	for file in files:
 		if file not in local_files:
 			file = os.path.join(path, file)
-			print("creating local file:", file)
+			if DEBUG: print("creating local file:", file)
 			create_local(file, False)
-			print("requesting remote file:", file)
+			if DEBUG: print("requesting remote file:", file)
 			length = size(file)
-			print("got size:", length)
-			# TODO: get file contents and write to backing
+			if DEBUG: print(file, "size is", length, "bytes")
+			contents = read(file, 0, length)
+			write_local(file, 0, length, contents)
 
 
 def list(path: str):
