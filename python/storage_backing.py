@@ -16,6 +16,18 @@ def ls(path: str):
 		return folders, files
 
 
+def size(path: str):
+	if os.name == "posix":
+		pass
+	if os.name == "nt":
+		total_size = 0
+		for root in ROOT_POINTS:
+			root_path = os.path.join(root, path)
+			stats = os.stat(root_path)
+			total_size += stats.st_size
+		return total_size
+
+
 def create(path: str, directory: bool, **kwargs):
 	if os.name == "posix":
 		path = ROOT_POINT + path

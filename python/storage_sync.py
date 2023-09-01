@@ -20,6 +20,7 @@ reads = {}
 
 class Command(Enum):
 	LIST = auto()
+	SIZE = auto()
 	CREATE = auto()
 	READ = auto()
 	DATA = auto()
@@ -70,6 +71,8 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 	match command:
 		case Command.LIST:
 			output = f"{Command.LIST.value}:{path}\n".encode()
+		case Command.SIZE:
+			output = f"{Command.SIZE.value}:{path}\n".encode()
 		case Command.CREATE:
 			output = f"{Command.CREATE.value}:{path}{SEP}{payload}\n".encode()
 		case Command.READ:
@@ -87,13 +90,19 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 		while peer.connection == None:
 			sleep(0.001)
 		peer.connection.sendall(output)
-	if command == Command.LIST:
-		data = peer.connection.recv(1024)
-		data = data.decode().removesuffix("\n")
-		folders, files = data.split(":")
-		folders = folders.split(SEP)
-		files = files.split(SEP)
-		return folders, files
+	match command:
+		case Command.LIST:
+			data = peer.connection.recv(1024)
+			data = data.decode().removesuffix("\n")
+			folders, files = data.split(":")
+			folders = folders.split(SEP)
+			files = files.split(SEP)
+			return folders, files
+		case Command.SIZE:
+			data = peer.connection.recv(1024)
+			data = data.decode().removesuffix("\n")
+			size = int(data)
+			return size
 
 
 @thread
@@ -144,7 +153,8 @@ def sync():
 			print("creating local file:", file)
 			create_local(file, False)
 			print("requesting remote file:", file)
-			# TODO: need a "size" command
+			length = size(file)
+			print("got size:", length)
 			# TODO: get file contents and write to backing
 
 
@@ -158,6 +168,13 @@ def list(path: str):
 		all_folders.extend(folders)
 		all_files.extend(files)
 	return all_folders, all_files
+
+
+def size(path: str):
+	path = pton(path)
+	if DEBUG: print(f"requesting size of {path}")
+	for peer in peer_list:
+		return transmit(peer, Command.SIZE, path).join()
 
 
 def create(path: str, directory: bool):
@@ -209,6 +226,13 @@ def list_local(path: str):
 		path = ntop(path, False)
 	if DEBUG: print(f"listing local {path}")
 	return storage_backing.ls(path)
+
+
+def size_local(path: str):
+	if os.name == "nt":
+		path = ntop(path, False)
+	if DEBUG: print("sizing local {path}")
+	return storage_backing.size(path)
 
 
 def create_local(path: str, directory: bool):
