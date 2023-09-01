@@ -19,12 +19,17 @@ reads = {}
 
 
 class Command(Enum):
-	LIST = auto()
-	SIZE = auto()
+	PAIR = auto()
+	CONNECT = auto()
+	SYNC = auto()
+	READY = auto()
+	DISCONNECT = auto()
 	CREATE = auto()
+	RENAME = auto()
+	LIST = auto()
 	READ = auto()
 	DATA = auto()
-	RENAME = auto()
+	SIZE = auto()
 	WRITE = auto()
 	REMOVE = auto()
 
