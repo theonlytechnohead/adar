@@ -73,7 +73,8 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     peer.shared_key = peer.generator.generate_shared_key(other_key)
                     self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
                     # for testing
-                    storage_sync.list("")
+                    folders, files = storage_sync.list("")
+                    print("testing", folders, files)
                 else:
                     print("TCP", self.client_address[0], self.data)
                     command = storage_sync.Command(int(self.data.split(":", 1)[0]))

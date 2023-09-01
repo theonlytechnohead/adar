@@ -13,7 +13,7 @@ from peer import *
 # ASCII unit separator control character
 SEP = "\x1f"
 
-DEBUG = True
+DEBUG = False
 
 reads = {}
 
@@ -39,12 +39,29 @@ def ntop(path: str, mount = True) -> str:
 	return str(pathlib.Path(MOUNT_POINT if mount else "", path))
 
 
+# How to get the return value from a thread? https://stackoverflow.com/a/6894023
+class ThreadWithReturnValue(threading.Thread):
+	def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
+		threading.Thread.__init__(self, group, target, name, args, kwargs)
+		self._target = target
+		self._args = args
+		self._kwargs = kwargs
+		self._return = None
+
+	def run(self):
+		self._return = self._target(*self._args, **self._kwargs)
+
+	def join(self):
+		threading.Thread.join(self)
+		return self._return
+
+
 def thread(function):
-    def run(*args, **kwargs):
-        t = threading.Thread(target=function, args=args, kwargs=kwargs)
-        t.start()
-        return t
-    return run
+	def run(*args, **kwargs):
+		thread = ThreadWithReturnValue(target=function, args=args, kwargs=kwargs)
+		thread.start()
+		return thread
+	return run
 
 
 @thread
@@ -67,10 +84,16 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 		"""Send a read request for a file over UDP"""
 		peer.data_connection.sendto(output, peer.data_address)
 	else:
+		while peer.connection == None:
+			sleep(0.001)
 		peer.connection.sendall(output)
 	if command == Command.LIST:
 		data = peer.connection.recv(1024)
-		print(data.decode())
+		data = data.decode().removesuffix("\n")
+		folders, files = data.split(":")
+		folders = folders.split(SEP)
+		files = files.split(SEP)
+		return folders, files
 
 
 @thread
@@ -104,9 +127,13 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 def list(path: str):
 	path = pton(path)
 	if DEBUG: print(f"requesting listing of {path}")
+	all_folders = []
+	all_files = []
 	for peer in peer_list:
-		transmit(peer, Command.LIST, path)
-
+		folders, files = transmit(peer, Command.LIST, path).join()
+		all_folders.extend(folders)
+		all_files.extend(files)
+	return all_folders, all_files
 
 def create(path: str, directory: bool):
 	path = pton(path)
