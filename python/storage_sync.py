@@ -118,6 +118,8 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 			data = peer.connection.recv(1024)
 			data = data.decode().removesuffix("\n")
 			return data == "1"
+		case Command.DISCONNECT:
+			peer.connection.shutdown(socket.SHUT_WR)
 		case Command.LIST:
 			data = peer.connection.recv(1024)
 			data = data.decode().removesuffix("\n")

@@ -92,6 +92,12 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
                     if ready:
                         self.data = "1".encode()
+                elif self.data.startswith("bye"):
+                    peer = identify_peer(self.client_address[0])
+                    if peer == None:
+                        print("\ttimed out trying to identify")
+                        continue
+                    print(f"{peer.service_name.removesuffix(SERVICE)[:-1]} said bye")
                 else:
                     print("TCP", self.client_address[0], self.data)
                     command = storage_sync.Command(int(self.data.split(":", 1)[0]))
@@ -221,9 +227,8 @@ def handle(signum, frame):
     adar.shutdown()
     adar_data.shutdown()
     for peer in peer_list:
-        if peer.connection != None:
-            peer.connection.shutdown(socket.SHUT_RDWR)
-            peer.connection.close()
+        if peer.ready:
+            storage_sync.transmit(peer, storage_sync.Command.DISCONNECT)
     if os.name == "posix":
         storage_fuse.destroy()
     if os.name == "nt":
