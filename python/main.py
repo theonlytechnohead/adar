@@ -73,8 +73,10 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     peer.shared_key = peer.generator.generate_shared_key(other_key)
                     self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
                 elif self.data.startswith("sync?"):
+                    print(f"\tsync request from {self.client_address[0]}, identifying...")
                     self.data = "0".encode()
                     peer = identify_peer(self.client_address[0])
+                    print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
                     if peer == None:
                         print("\ttimed out trying to identify")
                         continue

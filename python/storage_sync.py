@@ -111,7 +111,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 			data = data.decode().removesuffix("\n")
 			return data
 		case Command.CONNECT:
-			data = peer.connection.recv(len(payload))
+			data = peer.connection.recv(len(output))
 			data = data.decode().removesuffix("\n")
 			return data
 		case Command.SYNC:
