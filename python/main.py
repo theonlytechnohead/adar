@@ -72,6 +72,14 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     other_key = base64.b64decode(self.raw_data[4:-1])
                     peer.shared_key = peer.generator.generate_shared_key(other_key)
                     self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
+                elif self.data.startswith("sync?"):
+                    self.data = "0".encode()
+                    peer = identify_peer(self.client_address[0])
+                    if peer == None:
+                        print("\ttimed out trying to identify")
+                        continue
+                    if peer.connection != None and peer.shared_key != None:
+                        self.data = "1".encode()
                 else:
                     print("TCP", self.client_address[0], self.data)
                     command = storage_sync.Command(int(self.data.split(":", 1)[0]))

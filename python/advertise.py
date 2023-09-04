@@ -27,8 +27,10 @@ class AdarListener(ServiceListener):
                 connect(peer)
                 short_key = "-".join(f"{int(bit):03d}" for bit in peer.shared_key[:2])
                 print(f"\tkey: {short_key}")
-                sleep(1)
-                storage_sync.sync()
+                sync = storage_sync.transmit(peer, storage_sync.Command.SYNC).join()
+                if sync:
+                    storage_sync.sync().join()
+                    peer.ready  = storage_sync.transmit(peer, storage_sync.Command.READY).join()
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         pass

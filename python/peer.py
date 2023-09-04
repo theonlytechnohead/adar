@@ -12,6 +12,7 @@ class Peer:
     addresses: list[str]
     generator = None
     shared_key = bytes()
+    ready = False
     connection: socket.socket = None
     data_address: tuple() = None
     data_connection: socket.socket = None

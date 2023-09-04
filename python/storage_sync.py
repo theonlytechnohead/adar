@@ -79,7 +79,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case command.CONNECT:
 			output = f"key?{payload}\n".encode()
 		case command.SYNC:
-			output = f"sync\n".encode()
+			output = f"sync?\n".encode()
 		case command.READY:
 			output = f"ready\n".encode()
 		case command.DISCONNECT:
@@ -114,6 +114,10 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 			data = peer.connection.recv(len(payload))
 			data = data.decode().removesuffix("\n")
 			return data
+		case Command.SYNC:
+			data = peer.connection.recv(1024)
+			data = data.decode().removesuffix("\n")
+			return data == "1"
 		case Command.LIST:
 			data = peer.connection.recv(1024)
 			data = data.decode().removesuffix("\n")
