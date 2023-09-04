@@ -98,6 +98,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         print("\ttimed out trying to identify")
                         continue
                     print(f"{peer.service_name.removesuffix(SERVICE)[:-1]} said bye")
+                    peer.connection.shutdown(socket.SHUT_RD)
                 else:
                     print("TCP", self.client_address[0], self.data)
                     command = storage_sync.Command(int(self.data.split(":", 1)[0]))
