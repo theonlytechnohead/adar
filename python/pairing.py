@@ -4,6 +4,8 @@ import socket
 from diffiehellman import DiffieHellman
 from zeroconf import ServiceInfo, IPVersion
 
+import storage_sync
+
 from constants import PORT, DATA_PORT
 from peer import *
 
@@ -50,8 +52,7 @@ def request_pair(peer: Peer) -> bool:
         connection.close()
         return
     peer.connection = connection
-    connection.sendall(bytes("pair?" + "\n", "utf-8"))
-    received = str(connection.recv(1024), "utf-8")
+    received = storage_sync.transmit(peer, storage_sync.Command.PAIR)
     return True if received == "sure" else False
 
 

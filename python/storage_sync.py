@@ -71,21 +71,31 @@ def thread(function):
 
 
 @thread
-def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload = None, **kwargs):
+def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, payload = None, **kwargs):
 	output = "".encode()
 	match command:
-		case Command.LIST:
-			output = f"{Command.LIST.value}:{path}\n".encode()
-		case Command.SIZE:
-			output = f"{Command.SIZE.value}:{path}\n".encode()
+		case command.PAIR:
+			output = f"pair?\n".encode()
+		case command.CONNECT:
+			output = f"hi\n".encode()
+		case command.SYNC:
+			output = f"sync\n".encode()
+		case command.READY:
+			output = f"ready\n".encode()
+		case command.DISCONNECT:
+			output = f"bye\n".encode()
 		case Command.CREATE:
 			output = f"{Command.CREATE.value}:{path}{SEP}{payload}\n".encode()
+		case Command.RENAME:
+			output = f"{Command.RENAME.value}:{path}{SEP}{payload}\n".encode()
+		case Command.LIST:
+			output = f"{Command.LIST.value}:{path}\n".encode()
 		case Command.READ:
 			length = kwargs["length"]
 			reads[str(path)] = bytearray(length)
 			output = f"{Command.READ.value}:{path}{SEP}{payload}{SEP}{length}\n".encode()
-		case Command.RENAME:
-			output = f"{Command.RENAME.value}:{path}{SEP}{payload}\n".encode()
+		case Command.SIZE:
+			output = f"{Command.SIZE.value}:{path}\n".encode()
 		case Command.REMOVE:
 			output = f"{Command.REMOVE.value}:{path}\n".encode()
 	if command == Command.READ:
@@ -96,6 +106,10 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath, payload 
 			sleep(0.001)
 		peer.connection.sendall(output)
 	match command:
+		case Command.PAIR:
+			data = peer.connection.recv(1024)
+			data = data.decode().removesuffix("\n")
+			return data
 		case Command.LIST:
 			data = peer.connection.recv(1024)
 			data = data.decode().removesuffix("\n")
