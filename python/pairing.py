@@ -52,7 +52,7 @@ def request_pair(peer: Peer) -> bool:
         connection.close()
         return
     peer.connection = connection
-    received = storage_sync.transmit(peer, storage_sync.Command.PAIR)
+    received = storage_sync.transmit(peer, storage_sync.Command.PAIR).join()
     return True if received == "sure" else False
 
 
@@ -94,10 +94,8 @@ def connect(peer: Peer):
             return
         peer.connection = connection
     our_key = peer.generator.get_public_key()
-    data = "key?".encode() + base64.b64encode(our_key) + "\n".encode()
-    peer.connection.sendall(data)
-    data = peer.connection.recv(len(data))
-    other_key = base64.b64decode(data[4:-1])
+    data = storage_sync.transmit(peer, storage_sync.Command.CONNECT, None, base64.b64encode(our_key)).join()
+    other_key = base64.b64decode(data[4:])
     peer.shared_key = peer.generator.generate_shared_key(other_key)
     store_peer(peer)
 
