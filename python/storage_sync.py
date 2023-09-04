@@ -201,6 +201,7 @@ def sync():
 			if n in new:
 				new.remove(n)
 		exploring = new
+	return True
 
 
 def list(path: str):

@@ -12,7 +12,7 @@ from constants import *
 from peer import *
 
 stop = False
-
+ready = False
 
 def identify_peer(address: str, timeout: int = 10):
     peer: Peer = None
@@ -76,11 +76,21 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     print(f"\tsync request from {self.client_address[0]}, identifying...")
                     self.data = "0".encode()
                     peer = identify_peer(self.client_address[0])
-                    print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
                     if peer == None:
                         print("\ttimed out trying to identify")
                         continue
+                    print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
                     if peer.connection != None and peer.shared_key != None:
+                        self.data = "1".encode()
+                elif self.data.startswith("ready"):
+                    print(f"\tready request from {self.client_address[0]}, identifying...")
+                    self.data = "0".encode()
+                    peer = identify_peer(self.client_address[0])
+                    if peer == None:
+                        print("\ttimed out trying to identify")
+                        continue
+                    print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
+                    if ready:
                         self.data = "1".encode()
                 else:
                     print("TCP", self.client_address[0], self.data)

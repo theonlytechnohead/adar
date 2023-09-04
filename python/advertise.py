@@ -12,7 +12,6 @@ from peer import *
 
 this_name = f"{socket.gethostname()}.{SERVICE}"
 
-
 class AdarListener(ServiceListener):
     def add_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         info = zc.get_service_info(type_, name)
@@ -29,8 +28,9 @@ class AdarListener(ServiceListener):
                 print(f"\tkey: {short_key}")
                 sync = storage_sync.transmit(peer, storage_sync.Command.SYNC).join()
                 if sync:
-                    storage_sync.sync().join()
-                    peer.ready  = storage_sync.transmit(peer, storage_sync.Command.READY).join()
+                    global ready
+                    ready = storage_sync.sync().join()
+                    peer.ready = storage_sync.transmit(peer, storage_sync.Command.READY).join()
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         pass
