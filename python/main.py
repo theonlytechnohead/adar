@@ -205,7 +205,7 @@ class AdarDataHandler():
                 data = bytes(data)
                 print("UDP", f"got data: {path} ({start}->{start+length})", data)
                 # decryption, ChaCha20
-                cipher = ChaCha20.new(key=peer.shared_key[:-32], nonce=nonce)
+                cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=nonce)
                 plaintext = cipher.decrypt(data)
                 storage_sync.reads[path] = plaintext
             case storage_sync.Command.WRITE:
@@ -233,7 +233,7 @@ class AdarDataHandler():
                     data.extend((packet,))
                 data = bytes(data)
                 # decryption, ChaCha20
-                cipher = ChaCha20.new(key=peer.shared_key[:-32], nonce=nonce)
+                cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=nonce)
                 plaintext = cipher.decrypt(data)
                 storage_sync.write_local(path, start, length, plaintext)
     
