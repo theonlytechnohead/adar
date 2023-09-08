@@ -148,13 +148,11 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	start = kwargs["start"]
 	length = kwargs["length"]
 	payload: bytes
+	payload = base64.b64encode(payload)
 	# encryption, RFC 7539 ChaCha20
-	print(payload)
 	cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=get_random_bytes(12))
-	ciphertext = cipher.encrypt(payload)
-	print(ciphertext)
-	ciphertext = base64.b64encode(ciphertext)
-	print(ciphertext)
+	# ciphertext = cipher.encrypt(payload)
+	# ciphertext = base64.b64encode(ciphertext)
 	# encoding
 	encoder = BinaryCoder(length, 8, 1)
 	decoder = BinaryCoder(length, 8, 1)
