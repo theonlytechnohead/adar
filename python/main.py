@@ -1,3 +1,4 @@
+import math
 import signal
 import socket
 import select
@@ -187,15 +188,26 @@ class AdarDataHandler():
                     print("\ttimed out trying to identify")
                     return
                 print("UDP", f"confirmed data from {peer.service_name.removesuffix(SERVICE)[:-1]}")
-                path, start, length, _, _, _ = arguments.split(storage_sync.SEP)
-                _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
+                path, start, length, payload_length, _, _, _ = arguments.split(storage_sync.SEP)
+                _, _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
                 start = int(start)
                 length = int(length)
+                payload_length = int(payload_length)
+                coefficient_bytes = math.ceil(payload_length / 8)
                 nonce = base64.b64decode(nonce)
+                cata = base64.b64decode(cata)
+                coefficients = []
+                # grab `coefficient_bytes` number of bytes at a time and use int.from_bytes w/ "big" endian
+                for i in range(0, len(cata), coefficient_bytes):
+                    coefficient = bytearray(coefficient_bytes)
+                    for n in range(coefficient_bytes):
+                        coefficient[n] = cata[i + n]
+                    coefficient = int.from_bytes(coefficient, "big")
+                    coefficients.append(coefficient)
                 # decoding
-                decoder = BinaryCoder(int(length), 8, 1)
-                for coefficient, byte in zip(cata, data):
-                    coefficient = [coefficient >> i & 1 for i in range(length - 1, -1, -1)]
+                decoder = BinaryCoder(payload_length, 8, 1)
+                for coefficient, byte in zip(coefficients, data):
+                    coefficient = [coefficient >> i & 1 for i in range(payload_length - 1, -1, -1)]
                     bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
                     decoder.consume_packet(coefficient, bits)
                 # reassembly
