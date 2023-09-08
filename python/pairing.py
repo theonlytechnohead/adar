@@ -80,7 +80,7 @@ def pair(name: str, peer: Peer) -> bool:
 
 def connect(peer: Peer):
     if peer.generator == None:
-        peer.generator = DiffieHellman(group=14, key_bits=1024)
+        peer.generator = DiffieHellman(group=14, key_bits=540)
     if peer.connection:
         print(f"\tconnected to {peer.connection.getpeername()[0]}")
     else:

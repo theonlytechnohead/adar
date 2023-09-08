@@ -2,6 +2,7 @@ comtypes; os_name == "nt"
 fusepy; os_name == "posix"
 ipaddress
 netifaces
+pycryptodome
 py-diffie-hellman
 py-machineid
 zeroconf

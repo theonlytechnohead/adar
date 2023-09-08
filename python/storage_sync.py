@@ -1,6 +1,8 @@
 import os
 import pathlib
 import threading
+from Crypto.Cipher import ChaCha20
+from Crypto.Random import get_random_bytes
 from time import sleep
 
 import storage_backing
@@ -145,12 +147,14 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	start = kwargs["start"]
 	length = kwargs["length"]
 	payload: bytes
-	# TODO: encryption
+	# encryption, RFC 7539 ChaCha20
+	cipher = ChaCha20.new(peer.shared_key[:-32], get_random_bytes(12))
+	ciphertext = cipher.encrypt(payload)
 	# encoding
 	encoder = BinaryCoder(length, 8, 1)
 	decoder = BinaryCoder(length, 8, 1)
-	for i, byte in enumerate(payload):
-		coefficient = [0] * len(payload)
+	for i, byte in enumerate(ciphertext):
+		coefficient = [0] * len(ciphertext)
 		coefficient[i] = 1
 		bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
 		encoder.consume_packet(coefficient, bits)
@@ -167,7 +171,7 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	cata = bytes(cata)
 	data = bytes(data)
 	# transmission
-	output = f"{command.value}:{path}{SEP}{start}{SEP}{length}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
+	output = f"{command.value}:{path}{SEP}{start}{SEP}{length}{SEP}{cipher.nonce}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
 	peer.data_connection.sendto(output, peer.data_address)
 
 

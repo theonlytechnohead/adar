@@ -3,6 +3,7 @@ import socket
 import select
 import socketserver
 import threading
+from Crypto.Cipher import ChaCha20
 from time import sleep
 
 import storage_sync
@@ -180,8 +181,14 @@ class AdarDataHandler():
                 storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=start, length=length)
             case storage_sync.Command.DATA:
                 """Received data, presumably linked to a read request"""
-                path, start, length, _, _ = arguments.split(storage_sync.SEP)
-                _, _, _, cata, data = message.split(storage_sync.SEP.encode())
+                print("UDP", f"received data from {address[0]}")
+                peer = identify_peer(address[0])
+                if peer == None:
+                    print("\ttimed out trying to identify")
+                    return
+                print("UDP", f"confirmed data from {peer.service_name.removesuffix(SERVICE)[:-1]}")
+                path, start, length, _, _, _ = arguments.split(storage_sync.SEP)
+                _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
                 start = int(start)
                 length = int(length)
                 # decoding
@@ -197,12 +204,20 @@ class AdarDataHandler():
                     data.extend((packet,))
                 data = bytes(data)
                 print("UDP", f"got data: {path} ({start}->{start+length})", data)
-                # TODO: decryption
-                storage_sync.reads[path] = data
+                # decryption, ChaCha20
+                cipher = ChaCha20.new(peer.shared_key[:-32], nonce)
+                plaintext = cipher.decrypt(data)
+                storage_sync.reads[path] = plaintext
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
-                path, start, length, _, _ = arguments.split(storage_sync.SEP)
-                _, _, _, cata, data = message.split(storage_sync.SEP.encode())
+                print("UDP", f"received write data from {address[0]}")
+                peer = identify_peer(address[0])
+                if peer == None:
+                    print("\ttimed out trying to identify")
+                    return
+                print("UDP", f"confirmed write data from {peer.service_name.removesuffix(SERVICE)[:-1]}")
+                path, start, length, _, _, _ = arguments.split(storage_sync.SEP)
+                _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
                 start = int(start)
                 length = int(length)
                 # decoding
@@ -217,8 +232,10 @@ class AdarDataHandler():
                     packet = int("".join(map(str, packet)), 2)
                     data.extend((packet,))
                 data = bytes(data)
-                # TODO: decryption
-                storage_sync.write_local(path, start, length, data)
+                # decryption, ChaCha20
+                cipher = ChaCha20.new(peer.shared_key[:-32], nonce)
+                plaintext = cipher.decrypt(data)
+                storage_sync.write_local(path, start, length, plaintext)
     
     def shutdown(self):
         self.stop = True
