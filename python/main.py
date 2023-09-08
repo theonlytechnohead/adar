@@ -192,8 +192,6 @@ class AdarDataHandler():
                 start = int(start)
                 length = int(length)
                 nonce = base64.b64decode(nonce)
-                cata = base64.b64decode(cata)
-                data = base64.b64decode(data)
                 # decoding
                 decoder = BinaryCoder(int(length), 8, 1)
                 for coefficient, byte in zip(cata, data):
@@ -224,8 +222,6 @@ class AdarDataHandler():
                 start = int(start)
                 length = int(length)
                 nonce = base64.b64decode(nonce)
-                cata = base64.b64decode(cata)
-                data = base64.b64decode(data)
                 # decoding
                 decoder = BinaryCoder(int(length), 8, 1)
                 for coefficient, byte in zip(cata, data):
@@ -239,6 +235,7 @@ class AdarDataHandler():
                     data.extend((packet,))
                 data = bytes(data)
                 # decryption, ChaCha20
+                data = base64.b64decode(data)
                 cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=nonce)
                 plaintext = cipher.decrypt(data)
                 storage_sync.write_local(path, start, length, plaintext)

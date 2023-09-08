@@ -150,7 +150,7 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	payload: bytes
 	# encryption, RFC 7539 ChaCha20
 	cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=get_random_bytes(12))
-	ciphertext = cipher.encrypt(payload)
+	ciphertext = base64.b64encode(cipher.encrypt(payload))
 	# encoding
 	encoder = BinaryCoder(length, 8, 1)
 	decoder = BinaryCoder(length, 8, 1)
@@ -170,8 +170,8 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 		cata.extend((coefficient,))
 		data.extend((packet,))
 	nonce = base64.b64encode(cipher.nonce)
-	cata = base64.b64encode(bytes(cata))
-	data = base64.b64encode(bytes(data))
+	cata = bytes(cata)
+	data = bytes(data)
 	# transmission
 	output = f"{command.value}:{path}{SEP}{start}{SEP}{length}{SEP}{nonce.decode()}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
 	peer.data_connection.sendto(output, peer.data_address)
