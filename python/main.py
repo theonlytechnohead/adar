@@ -191,6 +191,8 @@ class AdarDataHandler():
                 _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
                 start = int(start)
                 length = int(length)
+                cata = base64.b64decode(cata)
+                data = base64.b64decode(data)
                 # decoding
                 decoder = BinaryCoder(int(length), 8, 1)
                 for coefficient, byte in zip(cata, data):
@@ -220,6 +222,8 @@ class AdarDataHandler():
                 _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
                 start = int(start)
                 length = int(length)
+                cata = base64.b64decode(cata)
+                data = base64.b64decode(data)
                 # decoding
                 decoder = BinaryCoder(int(length), 8, 1)
                 for coefficient, byte in zip(cata, data):
