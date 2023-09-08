@@ -169,10 +169,11 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 		packet = int("".join(map(str, packet)), 2)
 		cata.extend((coefficient,))
 		data.extend((packet,))
+	nonce = base64.b64encode(cipher.nonce)
 	cata = base64.b64encode(bytes(cata))
 	data = base64.b64encode(bytes(data))
 	# transmission
-	output = f"{command.value}:{path}{SEP}{start}{SEP}{length}{SEP}{cipher.nonce}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
+	output = f"{command.value}:{path}{SEP}{start}{SEP}{length}{SEP}{nonce.decode()}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
 	peer.data_connection.sendto(output, peer.data_address)
 
 

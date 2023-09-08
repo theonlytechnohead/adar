@@ -191,6 +191,7 @@ class AdarDataHandler():
                 _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
                 start = int(start)
                 length = int(length)
+                nonce = base64.b64decode(nonce)
                 cata = base64.b64decode(cata)
                 data = base64.b64decode(data)
                 # decoding
@@ -222,6 +223,7 @@ class AdarDataHandler():
                 _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
                 start = int(start)
                 length = int(length)
+                nonce = base64.b64decode(nonce)
                 cata = base64.b64decode(cata)
                 data = base64.b64decode(data)
                 # decoding
