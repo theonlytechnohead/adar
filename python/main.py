@@ -196,6 +196,7 @@ class AdarDataHandler():
                 coefficient_bytes = math.ceil(payload_length / 8)
                 nonce = base64.b64decode(nonce)
                 cata = base64.b64decode(cata)
+                data = base64.b64decode(data)
                 coefficients = []
                 # grab `coefficient_bytes` number of bytes at a time and use int.from_bytes w/ "big" endian
                 for i in range(0, len(cata), coefficient_bytes):
@@ -217,11 +218,11 @@ class AdarDataHandler():
                     data.extend((packet,))
                 data = bytes(data)
                 # decryption, ChaCha20
-                data = base64.b64decode(data)
-                # cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=nonce)
-                # plaintext = cipher.decrypt(data)
-                print("UDP", f"got data: {path} ({start}->{start+length})", data)
-                storage_sync.reads[path] = data
+                ciphertext = base64.b64decode(data)
+                cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=nonce)
+                plaintext = cipher.decrypt(ciphertext)
+                print("UDP", f"got data: {path} ({start}->{start+length})", plaintext)
+                storage_sync.reads[path] = plaintext
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
                 print("UDP", f"received write data from {address[0]}")
