@@ -184,17 +184,20 @@ class AdarDataHandler():
                 _, _, _, cata, data = message.split(storage_sync.SEP.encode())
                 start = int(start)
                 length = int(length)
+                # decoding
                 decoder = BinaryCoder(int(length), 8, 1)
                 for coefficient, byte in zip(cata, data):
                     coefficient = [coefficient >> i & 1 for i in range(length - 1, -1, -1)]
                     bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
                     decoder.consume_packet(coefficient, bits)
+                # reassembly
                 data = bytearray()
                 for packet in decoder.packet_vector:
                     packet = int("".join(map(str, packet)), 2)
                     data.extend((packet,))
                 data = bytes(data)
                 print("UDP", f"got data: {path} ({start}->{start+length})", data)
+                # TODO: decryption
                 storage_sync.reads[path] = data
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
@@ -202,17 +205,19 @@ class AdarDataHandler():
                 _, _, _, cata, data = message.split(storage_sync.SEP.encode())
                 start = int(start)
                 length = int(length)
+                # decoding
                 decoder = BinaryCoder(int(length), 8, 1)
-                print()
                 for coefficient, byte in zip(cata, data):
                     coefficient = [coefficient >> i & 1 for i in range(length - 1, -1, -1)]
                     bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
                     decoder.consume_packet(coefficient, bits)
+                # reassembly
                 data = bytearray()
                 for packet in decoder.packet_vector:
                     packet = int("".join(map(str, packet)), 2)
                     data.extend((packet,))
                 data = bytes(data)
+                # TODO: decryption
                 storage_sync.write_local(path, start, length, data)
     
     def shutdown(self):

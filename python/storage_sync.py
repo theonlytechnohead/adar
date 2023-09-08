@@ -72,6 +72,7 @@ def thread(function):
 
 @thread
 def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, payload = None, **kwargs):
+	# processing what to send
 	output = "".encode()
 	match command:
 		case command.PAIR:
@@ -98,6 +99,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 			output = f"{Command.SIZE.value}:{path}\n".encode()
 		case Command.REMOVE:
 			output = f"{Command.REMOVE.value}:{path}\n".encode()
+	# transmission
 	if command == Command.READ:
 		"""Send a read request for a file over UDP"""
 		peer.data_connection.sendto(output, peer.data_address)
@@ -105,6 +107,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		while peer.connection == None:
 			sleep(0.001)
 		peer.connection.sendall(output)
+	# receipt and processing
 	match command:
 		case Command.PAIR:
 			data = peer.connection.recv(1024)
@@ -142,6 +145,8 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	start = kwargs["start"]
 	length = kwargs["length"]
 	payload: bytes
+	# TODO: encryption
+	# encoding
 	encoder = BinaryCoder(length, 8, 1)
 	decoder = BinaryCoder(length, 8, 1)
 	for i, byte in enumerate(payload):
@@ -149,6 +154,7 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 		coefficient[i] = 1
 		bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
 		encoder.consume_packet(coefficient, bits)
+	# fetching encoded data and confirming sufficiently decodes
 	cata = bytearray()
 	data = bytearray()
 	while not decoder.is_fully_decoded():
@@ -160,6 +166,7 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 		data.extend((packet,))
 	cata = bytes(cata)
 	data = bytes(data)
+	# transmission
 	output = f"{command.value}:{path}{SEP}{start}{SEP}{length}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
 	peer.data_connection.sendto(output, peer.data_address)
 
