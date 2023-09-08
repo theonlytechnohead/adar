@@ -205,9 +205,10 @@ class AdarDataHandler():
                     data.extend((packet,))
                 data = bytes(data)
                 # decryption, ChaCha20
-                cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=nonce)
-                plaintext = cipher.decrypt(data)
-                print("UDP", f"got data: {path} ({start}->{start+length})", plaintext)
+                # data = base64.b64decode(data)
+                # cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=nonce)
+                # plaintext = cipher.decrypt(data)
+                print("UDP", f"got data: {path} ({start}->{start+length})", data)
                 storage_sync.reads[path] = plaintext
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
