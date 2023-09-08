@@ -1,4 +1,5 @@
 import base64
+import math
 import os
 import pathlib
 import threading
@@ -149,15 +150,17 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	length = kwargs["length"]
 	payload: bytes
 	payload = base64.b64encode(payload)
+	payload_length = len(payload)
+	coefficient_bytes = math.ceil(payload_length / 8)
 	# encryption, RFC 7539 ChaCha20
 	cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=get_random_bytes(12))
-	# ciphertext = cipher.encrypt(payload)
-	# ciphertext = base64.b64encode(ciphertext)
+	ciphertext = cipher.encrypt(payload)
+	ciphertext = base64.b64encode(ciphertext)
 	# encoding
-	encoder = BinaryCoder(length, 8, 1)
-	decoder = BinaryCoder(length, 8, 1)
+	encoder = BinaryCoder(payload_length, 8, 1)
+	decoder = BinaryCoder(payload_length, 8, 1)
 	for i, byte in enumerate(payload):
-		coefficient = [0] * len(payload)
+		coefficient = [0] * payload_length
 		coefficient[i] = 1
 		bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
 		encoder.consume_packet(coefficient, bits)
@@ -168,14 +171,15 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 		coefficient, packet = encoder.get_new_coded_packet()
 		decoder.consume_packet(coefficient, packet)
 		coefficient = int("".join(map(str, coefficient)), 2)
+		coefficient = coefficient.to_bytes(coefficient_bytes, "big")
 		packet = int("".join(map(str, packet)), 2)
-		cata.extend((coefficient,))
+		cata.extend(coefficient)
 		data.extend((packet,))
 	nonce = base64.b64encode(cipher.nonce)
-	cata = bytes(cata)
+	cata = base64.b64encode(bytes(cata))
 	data = bytes(data)
 	# transmission
-	output = f"{command.value}:{path}{SEP}{start}{SEP}{length}{SEP}{nonce.decode()}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
+	output = f"{command.value}:{path}{SEP}{start}{SEP}{length}{SEP}{payload_length}{SEP}{nonce.decode()}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
 	peer.data_connection.sendto(output, peer.data_address)
 
 
