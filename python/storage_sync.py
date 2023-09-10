@@ -144,7 +144,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 			ctime = int(ctime)
 			mtime = int(mtime)
 			atime = int(atime)
-			return size, atime, mtime
+			return size, ctime, mtime, atime
 
 
 @thread

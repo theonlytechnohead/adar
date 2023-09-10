@@ -33,6 +33,7 @@ def time(path: str, ctime: int, mtime: int, atime: int):
 	if os.name == "posix":
 		pass
 	if os.name == "nt":
+		ctime = ctime / 1_000_000_000  # convert ns to s
 		for root in ROOT_POINTS:
 			root_path = os.path.join(root, path)
 			os.utime(root_path, times=None, ns=(atime, mtime))
