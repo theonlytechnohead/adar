@@ -82,8 +82,9 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         print("\ttimed out trying to identify")
                         continue
                     print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
-                    if peer.connection != None and peer.shared_key != None:
-                        self.data = "1".encode()
+                    while peer.connection == None and peer.shared_key == None and peer.data_connection == None:
+                        sleep(0.001)
+                    self.data = "1".encode()
                 elif self.data.startswith("ready"):
                     print(f"\tready request from {self.client_address[0]}, identifying...")
                     self.data = "0".encode()
@@ -163,7 +164,7 @@ class AdarDataHandler():
             print(f"UDP message is invalid:")
             print(message)
             return
-        print("UDP", address[0], message.decode())
+        print("UDP", address[0], message.decode().strip())
         command = storage_sync.Command(int(message.decode().split(":", 1)[0]))
         arguments = message.decode().strip().split(":", 1)[1]
         match command:

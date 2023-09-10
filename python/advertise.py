@@ -24,7 +24,6 @@ class AdarListener(ServiceListener):
                 paired = pair(friendlyname, peer)
             if paired:
                 connected = connect(peer)
-                sleep(0.1)  # allow connections to establish
                 short_key = "-".join(f"{int(bit):03d}" for bit in peer.shared_key[:2])
                 print(f"\tkey: {short_key}")
                 if connected:
