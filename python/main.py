@@ -14,7 +14,6 @@ from constants import *
 from peer import *
 
 stop = False
-ready = False
 
 def identify_peer(address: str, timeout: int = 10):
     peer: Peer = None
@@ -93,7 +92,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         print("\ttimed out trying to identify")
                         continue
                     print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
-                    while not ready:
+                    while not peer.we_ready:
                         sleep(0.001)
                     self.data = "1".encode()
                 elif self.data.startswith("bye"):

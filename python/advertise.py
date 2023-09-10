@@ -29,8 +29,8 @@ class AdarListener(ServiceListener):
                 if connected:
                     sync = storage_sync.transmit(peer, storage_sync.Command.SYNC).join()
                     if sync:
-                        global ready
-                        ready = storage_sync.sync().join()
+                        peer.we_ready = storage_sync.sync().join()
+                        print("we are ready, telling peer")
                         peer.ready = storage_sync.transmit(peer, storage_sync.Command.READY).join()
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:

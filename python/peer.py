@@ -13,6 +13,7 @@ class Peer:
     generator = None
     shared_key = bytes()
     ready = False
+    we_ready = False
     connection: socket.socket = None
     data_address: tuple() = None
     data_connection: socket.socket = None
