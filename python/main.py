@@ -93,8 +93,9 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         print("\ttimed out trying to identify")
                         continue
                     print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
-                    if ready:
-                        self.data = "1".encode()
+                    while not ready:
+                        sleep(0.001)
+                    self.data = "1".encode()
                 elif self.data.startswith("bye"):
                     peer = identify_peer(self.client_address[0])
                     if peer == None:
