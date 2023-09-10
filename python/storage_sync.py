@@ -212,8 +212,16 @@ def explore(path: str):
 			write_local(file, 0, length, contents)
 			time_local(file, ctime, mtime, atime)
 		else:
-			# TODO: check date and download if peer has a more recent version
-			pass
+			if DEBUG: print(file, "is in both, comparing times")
+			length, ctime, mtime, atime = stats(file)
+			_, _, local_mtime, _ = stats_local(file)
+			if DEBUG: print(local_mtime, mtime)
+			if local_mtime < mtime:
+				# remote version is more recent, we should fetch it
+				if DEBUG: print("fetching more recent remote file:", file)
+				contents = read(file, 0, length)
+				write_local(file, 0, length, contents)
+				time_local(file, ctime, mtime, atime)
 	return explorable
 
 
@@ -265,6 +273,8 @@ def read(path: str, start: int, length: int) -> bytes:
 	for peer in peer_list:
 		transmit(peer, Command.READ, path, start, length=length)
 	# TODO: switch to events rather than polling?
+	if str(path) not in reads:
+		return bytes()
 	while type(reads[str(path)]) == bytearray:
 		sleep(0.001)
 	data = bytes(reads[str(path)])

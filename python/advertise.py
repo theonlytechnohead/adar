@@ -23,14 +23,16 @@ class AdarListener(ServiceListener):
             if not paired:
                 paired = pair(friendlyname, peer)
             if paired:
-                connect(peer)
+                connected = connect(peer)
+                sleep(0.1)  # allow connections to establish
                 short_key = "-".join(f"{int(bit):03d}" for bit in peer.shared_key[:2])
                 print(f"\tkey: {short_key}")
-                sync = storage_sync.transmit(peer, storage_sync.Command.SYNC).join()
-                if sync:
-                    global ready
-                    ready = storage_sync.sync().join()
-                    peer.ready = storage_sync.transmit(peer, storage_sync.Command.READY).join()
+                if connected:
+                    sync = storage_sync.transmit(peer, storage_sync.Command.SYNC).join()
+                    if sync:
+                        global ready
+                        ready = storage_sync.sync().join()
+                        peer.ready = storage_sync.transmit(peer, storage_sync.Command.READY).join()
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         pass

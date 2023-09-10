@@ -102,3 +102,4 @@ def connect(peer: Peer):
     peer.data_connection = socket.socket(peer.connection.family, socket.SOCK_DGRAM)
     peer.data_connection.settimeout(1)  # seconds
     peer.data_address = (peer.connection.getpeername()[0], DATA_PORT)
+    return True
