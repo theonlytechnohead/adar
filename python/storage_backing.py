@@ -25,16 +25,16 @@ def stats(path: str):
 			root_path = os.path.join(root, path)
 			stats = os.stat(root_path)
 			total_size += stats.st_size
-		return total_size, stats.st_ctime_ns, stats.st_mtime_ns
+		return total_size, stats.st_atime_ns, stats.st_mtime_ns
 
 
-def time(path: str, ctime: int, atime: int):
+def time(path: str, atime: int, mtime: int):
 	if os.name == "posix":
 		pass
 	if os.name == "nt":
 		for root in ROOT_POINTS:
 			root_path = os.path.join(root, path)
-			os.utime(root_path, (ctime, atime))
+			os.utime(root_path, times=None, ns=(atime, mtime))
 
 
 def create(path: str, directory: bool, **kwargs):
