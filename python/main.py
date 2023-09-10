@@ -112,10 +112,10 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             folders = f"{storage_sync.SEP}".join(folders)
                             files = f"{storage_sync.SEP}".join(files)
                             self.data = f"{folders}:{files}\n".encode()
-                        case storage_sync.Command.SIZE:
+                        case storage_sync.Command.STATS:
                             path = arguments
-                            size = storage_sync.size_local(path)
-                            self.data = f"{size}\n".encode()
+                            size, ctime, mtime = storage_sync.stats_local(path)
+                            self.data = f"{size}{storage_sync.SEP}{ctime}{storage_sync.SEP}{mtime}\n".encode()
                         case storage_sync.Command.CREATE:
                             path, directory = arguments.split(storage_sync.SEP)
                             storage_sync.create_local(path, bool(int(directory)))

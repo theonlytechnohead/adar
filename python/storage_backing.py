@@ -16,7 +16,7 @@ def ls(path: str):
 		return folders, files
 
 
-def size(path: str):
+def stats(path: str):
 	if os.name == "posix":
 		pass
 	if os.name == "nt":
@@ -25,7 +25,16 @@ def size(path: str):
 			root_path = os.path.join(root, path)
 			stats = os.stat(root_path)
 			total_size += stats.st_size
-		return total_size
+		return total_size, stats.st_ctime_ns, stats.st_mtime_ns
+
+
+def time(path: str, ctime: int, atime: int):
+	if os.name == "posix":
+		pass
+	if os.name == "nt":
+		for root in ROOT_POINTS:
+			root_path = os.path.join(root, path)
+			os.utime(root_path, (ctime, atime))
 
 
 def create(path: str, directory: bool, **kwargs):

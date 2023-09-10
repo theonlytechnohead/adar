@@ -33,7 +33,7 @@ class Command(Enum):
 	LIST = auto()
 	READ = auto()
 	DATA = auto()
-	SIZE = auto()
+	STATS = auto()
 	WRITE = auto()
 	REMOVE = auto()
 
@@ -99,8 +99,8 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 			length = kwargs["length"]
 			reads[str(path)] = bytearray(length)
 			output = f"{Command.READ.value}:{path}{SEP}{payload}{SEP}{length}\n".encode()
-		case Command.SIZE:
-			output = f"{Command.SIZE.value}:{path}\n".encode()
+		case Command.STATS:
+			output = f"{Command.STATS.value}:{path}\n".encode()
 		case Command.REMOVE:
 			output = f"{Command.REMOVE.value}:{path}\n".encode()
 	# transmission
@@ -136,11 +136,14 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 			folders = [folder for folder in folders if folder != ""]
 			files = [file for file in files if file != ""]
 			return folders, files
-		case Command.SIZE:
+		case Command.STATS:
 			data = peer.connection.recv(1024)
 			data = data.decode().removesuffix("\n")
-			size = int(data)
-			return size
+			size, ctime, atime = data.split(SEP)
+			size = int(size)
+			ctime = int(ctime)
+			atime = int(atime)
+			return size, ctime, atime
 
 
 @thread
@@ -150,6 +153,7 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	length = kwargs["length"]
 	payload: bytes
 	# encryption, RFC 7539 ChaCha20
+	# TODO: add MAC support with ChaCha20-Poly1305 as per https://pycryptodome.readthedocs.io/en/latest/src/cipher/chacha20_poly1305.html
 	cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=get_random_bytes(12))
 	ciphertext = cipher.encrypt(payload)
 	ciphertext = base64.b64encode(ciphertext)
@@ -201,10 +205,14 @@ def explore(path: str):
 			if DEBUG: print("creating local file:", file)
 			create_local(file, False)
 			if DEBUG: print("requesting remote file:", file)
-			length = size(file)
+			length, ctime, atime = stats(file)
 			if DEBUG: print(file, "size is", length, "bytes")
 			contents = read(file, 0, length)
 			write_local(file, 0, length, contents)
+			time_local(file, ctime, atime)
+		else:
+			# TODO: check date and download if peer has a more recent version
+			pass
 	return explorable
 
 
@@ -236,11 +244,11 @@ def list(path: str):
 	return all_folders, all_files
 
 
-def size(path: str):
+def stats(path: str):
 	path = pton(path)
 	if DEBUG: print(f"requesting size of {path}")
 	for peer in peer_list:
-		return transmit(peer, Command.SIZE, path).join()
+		return transmit(peer, Command.STATS, path).join()
 
 
 def create(path: str, directory: bool):
@@ -294,11 +302,18 @@ def list_local(path: str):
 	return storage_backing.ls(path)
 
 
-def size_local(path: str):
+def stats_local(path: str):
 	if os.name == "nt":
 		path = ntop(path, False)
-	if DEBUG: print("sizing local {path}")
-	return storage_backing.size(path)
+	if DEBUG: print(f"sizing local {path}")
+	return storage_backing.stats(path)
+
+
+def time_local(path: str, ctime: int, atime: int):
+	if os.name == "nt":
+		path = ntop(path, False)
+	if DEBUG: print(f"setting local time {path}")
+	return storage_backing.time(path, ctime, atime)
 
 
 def create_local(path: str, directory: bool):
