@@ -1,5 +1,6 @@
 import os
 import shutil
+from win32_setctime import setctime
 
 import fec
 
@@ -25,16 +26,20 @@ def stats(path: str):
 			root_path = os.path.join(root, path)
 			stats = os.stat(root_path)
 			total_size += stats.st_size
-		return total_size, stats.st_atime_ns, stats.st_mtime_ns
+		return total_size, stats.st_ctime_ns, stats.st_mtime_ns, stats.st_atime_ns
 
 
-def time(path: str, atime: int, mtime: int):
+def time(path: str, ctime: int, mtime: int, atime: int):
 	if os.name == "posix":
 		pass
 	if os.name == "nt":
 		for root in ROOT_POINTS:
 			root_path = os.path.join(root, path)
 			os.utime(root_path, times=None, ns=(atime, mtime))
+			setctime(root_path, ctime)
+		mount_path = os.path.join(MOUNT_POINT, path)
+		os.utime(mount_path, times=None, ns=(atime, mtime))
+		setctime(mount_path, ctime)
 
 
 def create(path: str, directory: bool, **kwargs):

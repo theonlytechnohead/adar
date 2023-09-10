@@ -139,10 +139,11 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case Command.STATS:
 			data = peer.connection.recv(1024)
 			data = data.decode().removesuffix("\n")
-			size, atime, mtime = data.split(SEP)
+			size, ctime, mtime, atime = data.split(SEP)
 			size = int(size)
-			atime = int(atime)
+			ctime = int(ctime)
 			mtime = int(mtime)
+			atime = int(atime)
 			return size, atime, mtime
 
 
@@ -205,11 +206,11 @@ def explore(path: str):
 			if DEBUG: print("creating local file:", file)
 			create_local(file, False)
 			if DEBUG: print("requesting remote file:", file)
-			length, atime, mtime = stats(file)
+			length, ctime, mtime, atime = stats(file)
 			if DEBUG: print(file, "size is", length, "bytes")
 			contents = read(file, 0, length)
 			write_local(file, 0, length, contents)
-			time_local(file, atime, mtime)
+			time_local(file, ctime, mtime, atime)
 		else:
 			# TODO: check date and download if peer has a more recent version
 			pass
@@ -309,11 +310,11 @@ def stats_local(path: str):
 	return storage_backing.stats(path)
 
 
-def time_local(path: str, atime: int, mtime: int):
+def time_local(path: str, ctime: int, mtime: int, atime: int):
 	if os.name == "nt":
 		path = ntop(path, False)
-	print(f"setting local time {path} to {atime}, {mtime}")
-	return storage_backing.time(path, atime, mtime)
+	if DEBUG: print(f"setting local time {path} to {atime}, {mtime}")
+	return storage_backing.time(path, ctime, mtime, atime)
 
 
 def create_local(path: str, directory: bool):

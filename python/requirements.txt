@@ -5,5 +5,6 @@ netifaces
 pycryptodome
 py-diffie-hellman
 py-machineid
+win32-setctime
 zeroconf
 zfex
