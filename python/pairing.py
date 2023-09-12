@@ -17,7 +17,8 @@ def add_peer(info: ServiceInfo) -> Peer:
         info.properties[b"uuid"].decode(),
         info.parsed_addresses(IPVersion.V4Only),
         info.parsed_addresses(IPVersion.V6Only),
-        info.parsed_addresses()
+        info.parsed_addresses(),
+        [int(version) for version in info.properties[b"versions"].split(storage_sync.SEP)]
         )
     peer_list.append(peer)
     return peer

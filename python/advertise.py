@@ -19,19 +19,22 @@ class AdarListener(ServiceListener):
             friendlyname = name.removesuffix(f".{SERVICE}")
             peer = add_peer(info)
             print(f"Discovered {friendlyname}")
-            paired = check_pair(peer)
-            if not paired:
-                paired = pair(friendlyname, peer)
-            if paired:
-                connected = connect(peer)
-                short_key = "-".join(f"{int(bit):03d}" for bit in peer.shared_key[:2])
-                print(f"\tkey: {short_key}")
-                if connected:
-                    sync = storage_sync.transmit(peer, storage_sync.Command.SYNC).join()
-                    if sync:
-                        peer.we_ready = storage_sync.sync().join()
-                        print("we are ready, telling peer")
-                        peer.ready = storage_sync.transmit(peer, storage_sync.Command.READY).join()
+            compatible_versions = [version for version in peer.versions if version in SUPPORTED_VERSIONS]
+            if 0 < len(compatible_versions):
+                peer.version = max(compatible_versions)
+                paired = check_pair(peer)
+                if not paired:
+                    paired = pair(friendlyname, peer)
+                if paired:
+                    connected = connect(peer)
+                    short_key = "-".join(f"{int(bit):03d}" for bit in peer.shared_key[:2])
+                    print(f"\tkey: {short_key}")
+                    if connected:
+                        sync = storage_sync.transmit(peer, storage_sync.Command.SYNC).join()
+                        if sync:
+                            peer.we_ready = storage_sync.sync().join()
+                            print("we are ready, telling peer")
+                            peer.ready = storage_sync.transmit(peer, storage_sync.Command.READY).join()
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         pass
@@ -75,7 +78,8 @@ def advertise() -> Zeroconf:
     zeroconf = Zeroconf()
     properties = {
         "Description": "Network coding for automated distributed storage systems",
-        "uuid": ID
+        "uuid": ID,
+        "versions": storage_sync.SEP.join(SUPPORTED_VERSIONS)
     }
     fqdn = socket.getfqdn()
     hostname = socket.gethostname()

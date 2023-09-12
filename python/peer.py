@@ -10,6 +10,8 @@ class Peer:
     ipv4_addresses: list[str]
     ipv6_addresses: list[str]
     addresses: list[str]
+    versions: list[int]
+    version: int = None
     generator = None
     shared_key = bytes()
     ready = False

@@ -80,7 +80,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 	output = "".encode()
 	match command:
 		case command.PAIR:
-			output = f"pair?\n".encode()
+			output = f"pair?{SEP.join(SUPPORTED_VERSIONS)}\n".encode()
 		case command.CONNECT:
 			output = f"key?{payload.decode()}\n".encode()
 		case command.SYNC:
