@@ -58,6 +58,19 @@ class AdarHandler(socketserver.StreamRequestHandler):
                 if self.data.startswith("pair?"):
                     # TODO: check with user that pairing is okay
                     self.data = "sure".encode()
+                elif self.data.startswith("connect?"):
+                    print(f"\tconnection request from {self.client_address[0]}, identifying...")
+                    self.data = "0".encode()
+                    peer = identify_peer(self.client_address[0])
+                    if peer == None:
+                        print("\ttimed out trying to identify")
+                        continue
+                    # TODO: set peer friendlyname
+                    # TODO: store this peer persistently for this connection
+                    print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
+                    if peer.version == None:
+                        break
+                    self.data = "1".encode()
                 elif self.data.startswith("key?"):
                     print(f"\tpeer request from {self.client_address[0]}, identifying...")
                     peer = identify_peer(self.client_address[0])

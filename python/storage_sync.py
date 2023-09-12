@@ -25,6 +25,7 @@ reads = {}
 class Command(Enum):
 	PAIR = auto()
 	CONNECT = auto()
+	KEY = auto()
 	SYNC = auto()
 	READY = auto()
 	DISCONNECT = auto()
@@ -82,6 +83,8 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case command.PAIR:
 			output = f"pair?{SEP.join(SUPPORTED_VERSIONS)}\n".encode()
 		case command.CONNECT:
+			output = f"connect?{SEP.join(SUPPORTED_VERSIONS)}\n".encode()
+		case command.KEY:
 			output = f"key?{payload.decode()}\n".encode()
 		case command.SYNC:
 			output = f"sync?\n".encode()
@@ -118,6 +121,10 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 			data = data.decode().removesuffix("\n")
 			return data
 		case Command.CONNECT:
+			data = peer.connection.recv(1024)
+			data = data.decode().removesuffix("\n")
+			return data
+		case Command.KEY:
 			data = peer.connection.recv(len(output))
 			data = data.decode().removesuffix("\n")
 			return data

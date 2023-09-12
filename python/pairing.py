@@ -94,8 +94,11 @@ def connect(peer: Peer):
             connection.close()
             return
         peer.connection = connection
+    accepted = storage_sync.transmit(peer, storage_sync.Command.CONNECT)
+    if accepted != "1":
+        return False
     our_key = peer.generator.get_public_key()
-    data = storage_sync.transmit(peer, storage_sync.Command.CONNECT, None, base64.b64encode(our_key)).join()
+    data = storage_sync.transmit(peer, storage_sync.Command.KEY, None, base64.b64encode(our_key)).join()
     other_key = base64.b64decode(data[4:])
     peer.shared_key = peer.generator.generate_shared_key(other_key)
     store_peer(peer)

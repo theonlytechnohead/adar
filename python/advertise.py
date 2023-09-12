@@ -27,9 +27,9 @@ class AdarListener(ServiceListener):
                     paired = pair(friendlyname, peer)
                 if paired:
                     connected = connect(peer)
-                    short_key = "-".join(f"{int(bit):03d}" for bit in peer.shared_key[:2])
-                    print(f"\tkey: {short_key}")
                     if connected:
+                        short_key = "-".join(f"{int(bit):03d}" for bit in peer.shared_key[:2])
+                        print(f"\tkey: {short_key}")
                         sync = storage_sync.transmit(peer, storage_sync.Command.SYNC).join()
                         if sync:
                             peer.we_ready = storage_sync.sync().join()
