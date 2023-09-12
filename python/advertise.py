@@ -41,7 +41,7 @@ class AdarListener(ServiceListener):
     def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         if name == this_name:
             return
-        print(f"{name} disappeared")
+        print(f"{name.removesuffix(SERVICE)[:-1]} disappeared")
         index = None
         for i, p in enumerate(peer_list):
             if p.service_name == name:
