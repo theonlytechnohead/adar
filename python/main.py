@@ -107,7 +107,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     print(f"{peer.friendly_name} said bye")
                     peer.connection.shutdown(socket.SHUT_RD)
                 else:
-                    print("TCP", peer.friendly_name, self.data)
+                    if peer.we_ready and peer.ready: print("TCP", peer.friendly_name, self.data)
                     command = storage_sync.Command(int(self.data.split(":", 1)[0]))
                     arguments = self.data.strip().split(":", 1)[1]
                     match command:
