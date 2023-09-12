@@ -168,18 +168,17 @@ class AdarDataHandler():
             print(f"UDP message is invalid:")
             print(message)
             return
-        print("UDP", address[0], message.decode().strip())
+        peer = identify_peer(address[0])
+        if peer == None:
+            print("\ttimed out trying to identify")
+            return
+        if peer.we_ready and peer.ready: print("UDP", address[0], message.decode().strip())
         command = storage_sync.Command(int(message.decode().split(":", 1)[0]))
         arguments = message.decode().strip().split(":", 1)[1]
         match command:
             case storage_sync.Command.READ:
                 """Received a read request, respond with network-coded data"""
-                print("UDP", f"received a read request from {address[0]}")
-                peer = identify_peer(address[0])
-                if peer == None:
-                    print("\ttimed out trying to identify")
-                    return
-                print("UDP", f"fulfilling read request for {peer.service_name.removesuffix(SERVICE)[:-1]}")
+                print("UDP", f"received a read request from {peer.friendly_name}")
                 path, start, length = arguments.split(storage_sync.SEP)
                 start = int(start)
                 length = int(length)
@@ -187,12 +186,7 @@ class AdarDataHandler():
                 storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=start, length=length)
             case storage_sync.Command.DATA:
                 """Received data, presumably linked to a read request"""
-                print("UDP", f"received data from {address[0]}")
-                peer = identify_peer(address[0])
-                if peer == None:
-                    print("\ttimed out trying to identify")
-                    return
-                print("UDP", f"confirmed data from {peer.service_name.removesuffix(SERVICE)[:-1]}")
+                print("UDP", f"received data from {peer.friendly_name}")
                 path, start, length, payload_length, _, _, _ = arguments.split(storage_sync.SEP)
                 _, _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
                 start = int(start)
@@ -230,12 +224,7 @@ class AdarDataHandler():
                 storage_sync.reads[path] = plaintext
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
-                print("UDP", f"received write data from {address[0]}")
-                peer = identify_peer(address[0])
-                if peer == None:
-                    print("\ttimed out trying to identify")
-                    return
-                print("UDP", f"confirmed write data from {peer.service_name.removesuffix(SERVICE)[:-1]}")
+                print("UDP", f"received write data from {peer.friendly_name}")
                 path, start, length, _, _, _ = arguments.split(storage_sync.SEP)
                 _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
                 start = int(start)
