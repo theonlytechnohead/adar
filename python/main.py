@@ -72,7 +72,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         break
                     self.data = f"{peer.version}".encode()
                 elif self.data.startswith("key?"):
-                    print(f"\tpeer request from {peer.friendly_name}")
+                    print(f"\tkey request from {peer.friendly_name}")
                     if peer.generator == None:
                         peer.generator = DiffieHellman(group=14, key_bits=1024)
                     public_key = peer.generator.get_public_key()
@@ -183,7 +183,6 @@ class AdarDataHandler():
             length = int(length)
             data = storage_sync.read_local(path, start, length)
         if command == storage_sync.Command.DATA or command == storage_sync.Command.WRITE:
-            print("UDP", f"received data from {peer.friendly_name}")
             path, start, length, payload_length, _, _, _ = arguments.split(storage_sync.SEP)
             _, _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
             start = int(start)
@@ -222,11 +221,11 @@ class AdarDataHandler():
                 storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=start, length=length)
             case storage_sync.Command.DATA:
                 """Received data, presumably linked to a read request"""
-                print("UDP", f"got data: {path} ({start}->{start+length})", plaintext)
+                print("UDP", peer.friendly_name, f"got data: {path} ({start}->{start+length})", plaintext)
                 storage_sync.reads[path] = plaintext
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
-                print("UDP", f"received write data from {peer.friendly_name}")
+                print("UDP", peer.friendly_name, f"write data: {path} ({start}->{start+length})", plaintext)
                 storage_sync.write_local(path, start, length, plaintext)
     
     def shutdown(self):
