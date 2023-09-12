@@ -36,30 +36,29 @@ class AdarHandler(socketserver.StreamRequestHandler):
                 print(f"Socket error {e}, closing...")
                 break
             if readable and writable:
+                # try reading
                 try:
                     self.raw_data = self.rfile.readline(2048)
                 except:
                     # socket closed unexpectedly
                     break
+                # check if there is any data
                 if 0 == len(self.raw_data):
-                    sleep(1)
+                    sleep(0.001)
                     continue
-                try:
-                    valid = self.raw_data.decode().endswith("\n")
-                except UnicodeDecodeError as e:
+                # check if message end is received
+                # TODO: maybe fetch more data / packets until end is recieved?
+                # though there may need to be additional checks to ensure that data isn't garbage along the way
+                if self.raw_data[-1] != b"\n":
                     # error, invalid message!
-                    print(f"Caught a UnicodeDecodeError: {e.reason}")
-                    self.wfile.write(bytes("\n", "utf-8"))
-                    continue
-                if not valid:
-                    # error, invalid message!
-                    print(f"TCP message is invalid:")
+                    print(f"TCP message is invalid:", end="")
                     print(self.raw_data)
-                    self.wfile.write(bytes("\n", "utf-8"))
+                    self.wfile.write(b"\n")
                     continue
                 self.data = str(self.raw_data.strip(), "utf-8")
-                if self.data == "pair?":
-                    self.data = b"sure"
+                if self.data.startswith("pair?"):
+                    # TODO: check with user that pairing is okay
+                    self.data = "sure".encode()
                 elif self.data.startswith("key?"):
                     print(f"\tpeer request from {self.client_address[0]}, identifying...")
                     peer = identify_peer(self.client_address[0])
