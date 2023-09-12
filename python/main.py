@@ -175,77 +175,58 @@ class AdarDataHandler():
         command = storage_sync.Command(int(message.decode().split(":", 1)[0]))
         arguments = message.decode().strip().split(":", 1)[1]
         # process command
+        if command == storage_sync.Command.READ:
+            """Received a read request, respond with network-coded data"""
+            print("UDP", f"received a read request from {peer.friendly_name}")
+            path, start, length = arguments.split(storage_sync.SEP)
+            start = int(start)
+            length = int(length)
+            data = storage_sync.read_local(path, start, length)
+        if command == storage_sync.Command.DATA or command == storage_sync.Command.WRITE:
+            print("UDP", f"received data from {peer.friendly_name}")
+            path, start, length, payload_length, _, _, _ = arguments.split(storage_sync.SEP)
+            _, _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
+            start = int(start)
+            length = int(length)
+            payload_length = int(payload_length)
+            coefficient_bytes = math.ceil(payload_length / 8)
+            nonce = base64.b64decode(nonce)
+            cata = base64.b64decode(cata)
+            data = base64.b64decode(data)
+            coefficients = []
+            # grab `coefficient_bytes` number of bytes at a time and use int.from_bytes w/ "big" endian
+            for i in range(0, len(cata), coefficient_bytes):
+                coefficient = bytearray(coefficient_bytes)
+                for n in range(coefficient_bytes):
+                    coefficient[n] = cata[i + n]
+                coefficient = int.from_bytes(coefficient, "big")
+                coefficients.append(coefficient)
+            # decoding
+            decoder = BinaryCoder(payload_length, 8, 1)
+            for coefficient, byte in zip(coefficients, data):
+                coefficient = [coefficient >> i & 1 for i in range(payload_length - 1, -1, -1)]
+                bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
+                decoder.consume_packet(coefficient, bits)
+            # reassembly
+            data = bytearray()
+            for packet in decoder.packet_vector:
+                packet = int("".join(map(str, packet)), 2)
+                data.extend((packet,))
+            data = bytes(data)
+            # decryption, ChaCha20
+            ciphertext = base64.b64decode(data)
+            cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=nonce)
+            plaintext = cipher.decrypt(ciphertext)
         match command:
             case storage_sync.Command.READ:
-                """Received a read request, respond with network-coded data"""
-                print("UDP", f"received a read request from {peer.friendly_name}")
-                path, start, length = arguments.split(storage_sync.SEP)
-                start = int(start)
-                length = int(length)
-                data = storage_sync.read_local(path, start, length)
                 storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=start, length=length)
             case storage_sync.Command.DATA:
                 """Received data, presumably linked to a read request"""
-                print("UDP", f"received data from {peer.friendly_name}")
-                path, start, length, payload_length, _, _, _ = arguments.split(storage_sync.SEP)
-                _, _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
-                start = int(start)
-                length = int(length)
-                payload_length = int(payload_length)
-                coefficient_bytes = math.ceil(payload_length / 8)
-                nonce = base64.b64decode(nonce)
-                cata = base64.b64decode(cata)
-                data = base64.b64decode(data)
-                coefficients = []
-                # grab `coefficient_bytes` number of bytes at a time and use int.from_bytes w/ "big" endian
-                for i in range(0, len(cata), coefficient_bytes):
-                    coefficient = bytearray(coefficient_bytes)
-                    for n in range(coefficient_bytes):
-                        coefficient[n] = cata[i + n]
-                    coefficient = int.from_bytes(coefficient, "big")
-                    coefficients.append(coefficient)
-                # decoding
-                decoder = BinaryCoder(payload_length, 8, 1)
-                for coefficient, byte in zip(coefficients, data):
-                    coefficient = [coefficient >> i & 1 for i in range(payload_length - 1, -1, -1)]
-                    bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
-                    decoder.consume_packet(coefficient, bits)
-                # reassembly
-                data = bytearray()
-                for packet in decoder.packet_vector:
-                    packet = int("".join(map(str, packet)), 2)
-                    data.extend((packet,))
-                data = bytes(data)
-                # decryption, ChaCha20
-                ciphertext = base64.b64decode(data)
-                cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=nonce)
-                plaintext = cipher.decrypt(ciphertext)
                 print("UDP", f"got data: {path} ({start}->{start+length})", plaintext)
                 storage_sync.reads[path] = plaintext
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
                 print("UDP", f"received write data from {peer.friendly_name}")
-                path, start, length, _, _, _ = arguments.split(storage_sync.SEP)
-                _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
-                start = int(start)
-                length = int(length)
-                nonce = base64.b64decode(nonce)
-                # decoding
-                decoder = BinaryCoder(int(length), 8, 1)
-                for coefficient, byte in zip(cata, data):
-                    coefficient = [coefficient >> i & 1 for i in range(length - 1, -1, -1)]
-                    bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
-                    decoder.consume_packet(coefficient, bits)
-                # reassembly
-                data = bytearray()
-                for packet in decoder.packet_vector:
-                    packet = int("".join(map(str, packet)), 2)
-                    data.extend((packet,))
-                data = bytes(data)
-                # decryption, ChaCha20
-                data = base64.b64decode(data)
-                cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=nonce)
-                plaintext = cipher.decrypt(data)
                 storage_sync.write_local(path, start, length, plaintext)
     
     def shutdown(self):
