@@ -28,6 +28,7 @@ def identify_peer(address: str, timeout: int = 10):
 class AdarHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
         self.connection: socket.socket
+        peer: Peer = None
         global stop
         while not stop:
             try:
@@ -71,12 +72,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         break
                     self.data = f"{peer.version}".encode()
                 elif self.data.startswith("key?"):
-                    print(f"\tpeer request from {self.client_address[0]}, identifying...")
-                    peer = identify_peer(self.client_address[0])
-                    if peer == None:
-                        print("\ttimed out trying to identify")
-                        continue
-                    print(f"\tidentified peer: {peer.friendly_name}")
+                    print(f"\tpeer request from {peer.friendly_name}")
                     if peer.generator == None:
                         peer.generator = DiffieHellman(group=14, key_bits=1024)
                     public_key = peer.generator.get_public_key()
@@ -84,36 +80,34 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     peer.shared_key = peer.generator.generate_shared_key(other_key)
                     self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
                 elif self.data.startswith("sync?"):
-                    print(f"\tsync request from {self.client_address[0]}, identifying...")
+                    print(f"\tsync request from {peer.friendly_name}")
                     self.data = "0".encode()
-                    peer = identify_peer(self.client_address[0])
-                    if peer == None:
-                        print("\ttimed out trying to identify")
-                        continue
-                    print(f"\tidentified peer: {peer.friendly_name}")
+                    timeout = 10
                     while peer.connection == None and peer.shared_key == None and peer.data_connection == None:
                         sleep(0.001)
-                    self.data = "1".encode()
+                        timeout -= 0.001
+                        if timeout <= 0:
+                            break
+                    if 0 < timeout:
+                        self.data = "1".encode()
                 elif self.data.startswith("ready"):
-                    print(f"\tready request from {self.client_address[0]}, identifying...")
+                    print(f"\tready request from {peer.friendly_name}")
                     self.data = "0".encode()
-                    peer = identify_peer(self.client_address[0])
-                    if peer == None:
-                        print("\ttimed out trying to identify")
-                        continue
-                    print(f"\tidentified peer: {peer.friendly_name}")
+                    timeout = 10
                     while not peer.we_ready:
                         sleep(0.001)
-                    self.data = "1".encode()
+                        timeout -= 0.001
+                        if timeout <= 0:
+                            break
+                    if 0 < timeout:
+                        self.data = "1".encode()
                 elif self.data.startswith("bye"):
-                    peer = identify_peer(self.client_address[0])
                     if peer == None:
-                        print("\ttimed out trying to identify")
-                        continue
+                        break
                     print(f"{peer.friendly_name} said bye")
                     peer.connection.shutdown(socket.SHUT_RD)
                 else:
-                    print("TCP", self.client_address[0], self.data)
+                    print("TCP", peer.friendly_name, self.data)
                     command = storage_sync.Command(int(self.data.split(":", 1)[0]))
                     arguments = self.data.strip().split(":", 1)[1]
                     match command:
