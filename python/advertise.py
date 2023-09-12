@@ -16,15 +16,14 @@ class AdarListener(ServiceListener):
     def add_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         info = zc.get_service_info(type_, name)
         if info.properties[b"uuid"].decode() != ID:
-            friendlyname = name.removesuffix(f".{SERVICE}")
             peer = add_peer(info)
-            print(f"Discovered {friendlyname}")
+            print(f"Discovered {peer.friendly_name}")
             compatible_versions = [version for version in peer.versions if version in SUPPORTED_VERSIONS]
             if 0 < len(compatible_versions):
                 peer.version = max(compatible_versions)
                 paired = check_pair(peer)
                 if not paired:
-                    paired = pair(friendlyname, peer)
+                    paired = pair(peer)
                 if paired:
                     connected = connect(peer)
                     if connected:
@@ -50,7 +49,7 @@ class AdarListener(ServiceListener):
                 break
         if index != None:
             if peer_list[index].connection != None:
-                peer_list[index].connection.shutdown(2)
+                peer_list[index].connection.shutdown(socket.SHUT_RDWR)
                 peer_list[index].connection.close()
             del peer_list[index]
 

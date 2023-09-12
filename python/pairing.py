@@ -12,6 +12,7 @@ from peer import *
 
 def add_peer(info: ServiceInfo) -> Peer:
     peer = Peer(
+        info.name.removesuffix(SERVICE)[:-1],
         info.name,
         info.server,
         info.properties[b"uuid"].decode(),
@@ -67,8 +68,8 @@ def store_peer(peer: Peer):
         file.write("\n")
 
 
-def pair(name: str, peer: Peer) -> bool:
-    confirm = input(f"Do you want to pair with {name}? [Y/n] ")
+def pair(peer: Peer) -> bool:
+    confirm = input(f"Do you want to pair with {peer.friendly_name}? [Y/n] ")
     if confirm.lower() == "y" or confirm == "":
         if request_pair(peer):
             print("\tPaired!")

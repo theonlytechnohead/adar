@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 @dataclass
 class Peer:
+    friendly_name: str
     service_name: str
     fqdn: str
     uuid: str

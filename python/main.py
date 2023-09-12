@@ -65,9 +65,8 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     if peer == None:
                         print("\ttimed out trying to identify")
                         continue
-                    # TODO: set peer friendlyname
                     # TODO: store this peer persistently for this connection
-                    print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
+                    print(f"\tidentified peer: {peer.friendly_name}")
                     if peer.version == None:
                         break
                     self.data = f"{peer.version}".encode()
@@ -77,7 +76,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     if peer == None:
                         print("\ttimed out trying to identify")
                         continue
-                    print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
+                    print(f"\tidentified peer: {peer.friendly_name}")
                     if peer.generator == None:
                         peer.generator = DiffieHellman(group=14, key_bits=1024)
                     public_key = peer.generator.get_public_key()
@@ -91,7 +90,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     if peer == None:
                         print("\ttimed out trying to identify")
                         continue
-                    print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
+                    print(f"\tidentified peer: {peer.friendly_name}")
                     while peer.connection == None and peer.shared_key == None and peer.data_connection == None:
                         sleep(0.001)
                     self.data = "1".encode()
@@ -102,7 +101,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     if peer == None:
                         print("\ttimed out trying to identify")
                         continue
-                    print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
+                    print(f"\tidentified peer: {peer.friendly_name}")
                     while not peer.we_ready:
                         sleep(0.001)
                     self.data = "1".encode()
@@ -111,7 +110,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     if peer == None:
                         print("\ttimed out trying to identify")
                         continue
-                    print(f"{peer.service_name.removesuffix(SERVICE)[:-1]} said bye")
+                    print(f"{peer.friendly_name} said bye")
                     peer.connection.shutdown(socket.SHUT_RD)
                 else:
                     print("TCP", self.client_address[0], self.data)
