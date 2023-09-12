@@ -6,7 +6,7 @@ from zeroconf import ServiceInfo, IPVersion
 
 import storage_sync
 
-from constants import PORT, DATA_PORT
+from constants import *
 from peer import *
 
 
@@ -94,9 +94,10 @@ def connect(peer: Peer):
             connection.close()
             return
         peer.connection = connection
-    accepted = storage_sync.transmit(peer, storage_sync.Command.CONNECT)
-    if accepted != "1":
+    version = int(storage_sync.transmit(peer, storage_sync.Command.CONNECT).join())
+    if version not in SUPPORTED_VERSIONS:
         return False
+    peer.version = version
     our_key = peer.generator.get_public_key()
     data = storage_sync.transmit(peer, storage_sync.Command.KEY, None, base64.b64encode(our_key)).join()
     other_key = base64.b64decode(data[4:])

@@ -70,7 +70,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     print(f"\tidentified peer: {peer.service_name.removesuffix(SERVICE)[:-1]}")
                     if peer.version == None:
                         break
-                    self.data = "1".encode()
+                    self.data = f"{peer.version}".encode()
                 elif self.data.startswith("key?"):
                     print(f"\tpeer request from {self.client_address[0]}, identifying...")
                     peer = identify_peer(self.client_address[0])
