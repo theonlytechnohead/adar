@@ -153,28 +153,28 @@ class AdarDataHandler():
             self.handle_connection()
     
     def handle_connection(self):
+        # try reading
         try:
             message, address = self.connection.recvfrom(2048)
         except OSError:
             return
-        try:
-            valid = message.decode().endswith("\n")
-        except UnicodeDecodeError as e:
+        # check if message end is received
+        # TODO: maybe fetch more data / packets until end is recieved?
+                # though there may need to be additional checks to ensure that data isn't garbage along the way
+        if message[-1].to_bytes() != b"\n":
             # error, invalid message!
-            print(f"Caught a UnicodeDecodeError: {e.reason}")
+            print(f"UDP message is invalid:", message)
             return
-        if not valid:
-            # error, invalid message!
-            print(f"UDP message is invalid:")
-            print(message)
-            return
+        # identify peer
         peer = identify_peer(address[0])
         if peer == None:
             print("\ttimed out trying to identify")
             return
         if peer.we_ready and peer.ready: print("UDP", address[0], message.decode().strip())
+        # split command and arguments
         command = storage_sync.Command(int(message.decode().split(":", 1)[0]))
         arguments = message.decode().strip().split(":", 1)[1]
+        # process command
         match command:
             case storage_sync.Command.READ:
                 """Received a read request, respond with network-coded data"""
