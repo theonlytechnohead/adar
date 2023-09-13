@@ -86,7 +86,7 @@ def connect(peer: Peer):
     if peer.connection:
         print(f"\tconnected to {peer.connection.getpeername()[0]}")
     else:
-        address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
+        address = peer.fqdn.removesuffix(".")
         print(f"\tconnecting to\t{address}")
         connection = socket.create_connection((address, PORT))
         print(f"\tconnected to\t{connection.getpeername()[0]}")

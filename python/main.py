@@ -145,6 +145,7 @@ class dual_stack(socketserver.ThreadingTCPServer):
 
 class AdarDataHandler():
     def __init__(self, address: tuple) -> None:
+        # TODO: confirm dual-stack UDP server
         self.connection = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
         self.connection.bind(address)
         self.stop = False
@@ -181,7 +182,6 @@ class AdarDataHandler():
             return
         if peer.we_ready and peer.ready: print("UDP", peer.friendly_name, command)
         arguments = arguments.decode().strip()
-        print(command, arguments)
         # process command
         if command == storage_sync.Command.READ:
             """Received a read request, respond with network-coded data"""
@@ -273,7 +273,7 @@ if __name__ == "__main__":
         storage = threading.Thread(target=storage_projected.create)
         storage.start()
     adar = dual_stack(("::", PORT), AdarHandler)
-    adar_data = AdarDataHandler(("", DATA_PORT))
+    adar_data = AdarDataHandler(("::", DATA_PORT))
     server = threading.Thread(target=adar.serve_forever)
     data_server = threading.Thread(target=adar_data.handle, daemon=True)
     server.start()
