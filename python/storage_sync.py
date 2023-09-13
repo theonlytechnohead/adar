@@ -186,6 +186,7 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 		packet = int("".join(map(str, packet)), 2)
 		cata.extend(coefficient)
 		data.extend((packet,))
+	# TODO remove requirement to base64 encode
 	nonce = base64.b64encode(cipher.nonce)
 	cata = base64.b64encode(bytes(cata))
 	data = base64.b64encode(bytes(data))

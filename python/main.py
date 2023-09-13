@@ -165,17 +165,24 @@ class AdarDataHandler():
         # though there may need to be additional checks to ensure that data isn't garbage along the way
         if message[-1].to_bytes() != b"\n":
             # error, invalid message!
-            print(f"UDP message is invalid:", message)
+            print("UDP message is invalid:", message)
             return
         # identify peer
         peer = identify_peer(address[0])
         if peer == None:
             print("\ttimed out trying to identify")
             return
-        if peer.we_ready and peer.ready: print("UDP", address[0], message.decode().strip())
         # split command and arguments
-        command = storage_sync.Command(int(message.decode().split(":", 1)[0]))
-        arguments = message.decode().strip().split(":", 1)[1]
+        command, arguments = message.split(b":", 1)
+        print(command, arguments)
+        try:
+            command = storage_sync.Command(int(command))
+        except:
+            print("UDP command is invalid", message)
+            return
+        if peer.we_ready and peer.ready: print("UDP", peer.friendly_name, command)
+        arguments = arguments.decode().strip()
+        print(command, arguments)
         # process command
         if command == storage_sync.Command.READ:
             """Received a read request, respond with network-coded data"""
@@ -185,12 +192,14 @@ class AdarDataHandler():
             length = int(length)
             data = storage_sync.read_local(path, start, length)
         if command == storage_sync.Command.DATA or command == storage_sync.Command.WRITE:
+            """Recieved network-coded data, decode and decrypt"""
             path, start, length, payload_length, _, _, _ = arguments.split(storage_sync.SEP)
             _, _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
             start = int(start)
             length = int(length)
             payload_length = int(payload_length)
             coefficient_bytes = math.ceil(payload_length / 8)
+            # TODO: remove requirement to base64 decode
             nonce = base64.b64decode(nonce)
             cata = base64.b64decode(cata)
             data = base64.b64decode(data)
@@ -223,11 +232,11 @@ class AdarDataHandler():
                 storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=start, length=length)
             case storage_sync.Command.DATA:
                 """Received data, presumably linked to a read request"""
-                print("UDP", peer.friendly_name, f"got data: {path} ({start}->{start+length})", plaintext)
+                print("UDP", peer.friendly_name, f"data from a read: {path} ({start}->{start+length})", plaintext)
                 storage_sync.reads[path] = plaintext
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
-                print("UDP", peer.friendly_name, f"write data: {path} ({start}->{start+length})", plaintext)
+                print("UDP", peer.friendly_name, f"data to write: {path} ({start}->{start+length})", plaintext)
                 storage_sync.write_local(path, start, length, plaintext)
     
     def shutdown(self):
