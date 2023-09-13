@@ -18,11 +18,10 @@ stop = False
 def identify_peer(address: str, timeout: int = 10):
     if address.startswith("::ffff:"):
         address = address.removeprefix("::ffff:")
-    peer: Peer = None
-    while peer == None and timeout != 0:
-        for p in peer_list:
-            if address in p.addresses:
-                return p
+    while 0 < timeout:
+        for peer in peer_list:
+            if address in peer.addresses:
+                return peer
         sleep(1)
         timeout -= 1
 
