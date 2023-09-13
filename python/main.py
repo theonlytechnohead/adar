@@ -174,7 +174,6 @@ class AdarDataHandler():
             return
         # split command and arguments
         command, arguments = message.split(b":", 1)
-        print(command, arguments)
         try:
             command = storage_sync.Command(int(command))
         except:
