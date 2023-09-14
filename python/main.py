@@ -152,9 +152,13 @@ class AdarDataHandler():
         self.stop = False
 
     def handle(self) -> None:
+        threading.Thread(target=self.handle_threaded, args=(self.v4_connection,)).start()
+        threading.Thread(target=self.handle_threaded, args=(self.v6_connection,)).start()
+        
+    
+    def handle_threaded(self, connection: socket.socket):
         while not self.stop:
-            self.handle_connection(self.v4_connection)
-            self.handle_connection(self.v6_connection)
+            self.handle_connection(connection)
     
     def handle_connection(self, connection: socket.socket):
         # try reading
