@@ -145,7 +145,6 @@ class dual_stack(socketserver.ThreadingTCPServer):
 
 class AdarDataHandler():
     def __init__(self, v4_address: tuple, v6_address: tuple) -> None:
-        # TODO: confirm dual-stack UDP server
         self.v4_connection = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.v6_connection = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
         self.v4_connection.bind(v4_address)

@@ -105,7 +105,16 @@ def connect(peer: Peer):
     peer.shared_key = peer.generator.generate_shared_key(other_key)
     store_peer(peer)
 
-    peer.data_connection = socket.socket(peer.connection.family, socket.SOCK_DGRAM)
+    family: socket.AddressFamily
+    match peer.connection.family:
+        case socket.AF_INET:
+            family = socket.AF_INET
+        case socket.AF_INET6:
+            if peer.connection.getpeername()[0].startswith("::ffff:"):
+                family = socket.AF_INET
+            else:
+                family = socket.AF_INET6
+    peer.data_connection = socket.socket(family, socket.SOCK_DGRAM)
     peer.data_connection.settimeout(1)  # seconds
     peer.data_address = (peer.connection.getpeername()[0], DATA_PORT)
     return True
