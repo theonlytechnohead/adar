@@ -144,20 +144,23 @@ class dual_stack(socketserver.ThreadingTCPServer):
 
 
 class AdarDataHandler():
-    def __init__(self, address: tuple) -> None:
+    def __init__(self, v4_address: tuple, v6_address: tuple) -> None:
         # TODO: confirm dual-stack UDP server
-        self.connection = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-        self.connection.bind(address)
+        self.v4_connection = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.v6_connection = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+        self.v4_connection.bind(v4_address)
+        self.v6_connection.bind(v6_address)
         self.stop = False
 
     def handle(self) -> None:
         while not self.stop:
-            self.handle_connection()
+            self.handle_connection(self.v4_connection)
+            self.handle_connection(self.v6_connection)
     
-    def handle_connection(self):
+    def handle_connection(self, connection: socket.socket):
         # try reading
         try:
-            message, address = self.connection.recvfrom(2048)
+            message, address = connection.recvfrom(2048)
         except OSError:
             return
         # check if message end is received
@@ -239,8 +242,10 @@ class AdarDataHandler():
     
     def shutdown(self):
         self.stop = True
-        self.connection.shutdown(socket.SHUT_RDWR)
-        self.connection.close()
+        self.v4_connection.shutdown(socket.SHUT_RDWR)
+        self.v6_connection.shutdown(socket.SHUT_RDWR)
+        self.v4_connection.close()
+        self.v6_connection.close()
 
 
 def handle(signum, frame):
@@ -272,7 +277,7 @@ if __name__ == "__main__":
         storage = threading.Thread(target=storage_projected.create)
         storage.start()
     adar = dual_stack(("::", PORT), AdarHandler)
-    adar_data = AdarDataHandler(("::", DATA_PORT))
+    adar_data = AdarDataHandler(("0.0.0.0", DATA_PORT), ("::", DATA_PORT))
     server = threading.Thread(target=adar.serve_forever)
     data_server = threading.Thread(target=adar_data.handle, daemon=True)
     server.start()
