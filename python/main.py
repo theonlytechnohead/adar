@@ -145,14 +145,16 @@ class dual_stack(socketserver.ThreadingTCPServer):
 
 class AdarDataHandler():
     def __init__(self, v4_address: tuple, v6_address: tuple) -> None:
-        self.v4_connection = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        if os.name == "nt":
+            self.v4_connection = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            self.v4_connection.bind(v4_address)
         self.v6_connection = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-        self.v4_connection.bind(v4_address)
         self.v6_connection.bind(v6_address)
         self.stop = False
 
     def handle(self) -> None:
-        threading.Thread(target=self.handle_threaded, args=(self.v4_connection,)).start()
+        if os.name == "nt":
+            threading.Thread(target=self.handle_threaded, args=(self.v4_connection,)).start()
         threading.Thread(target=self.handle_threaded, args=(self.v6_connection,)).start()
         
     
@@ -245,9 +247,8 @@ class AdarDataHandler():
     
     def shutdown(self):
         self.stop = True
-        self.v4_connection.shutdown(socket.SHUT_RDWR)
-        self.v6_connection.shutdown(socket.SHUT_RDWR)
-        self.v4_connection.close()
+        if os.name == "nt":
+            self.v4_connection.close()
         self.v6_connection.close()
 
 
