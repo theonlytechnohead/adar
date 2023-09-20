@@ -182,14 +182,14 @@ class AdarDataHandler():
             print("\ttimed out trying to identify")
             return
         # split command and arguments
-        command, arguments = message.split(b":", 1)
+        header, arguments = message.split(storage_sync.SEP.encode(), 1)
         try:
-            command = storage_sync.Command(int(command))
+            command = storage_sync.Command(header[0])
         except:
             print("UDP command is invalid", message)
             return
         if peer.we_ready and peer.ready: print("UDP", peer.friendly_name, command)
-        arguments = arguments.decode().strip()
+        arguments = arguments.strip()
         # process command
         if command == storage_sync.Command.READ:
             """Received a read request, respond with network-coded data"""
@@ -200,16 +200,16 @@ class AdarDataHandler():
             data = storage_sync.read_local(path, start, length)
         if command == storage_sync.Command.DATA or command == storage_sync.Command.WRITE:
             """Recieved network-coded data, decode and decrypt"""
-            path, start, length, payload_length, _, _, _ = arguments.split(storage_sync.SEP)
-            _, _, _, _, nonce, cata, data = message.split(storage_sync.SEP.encode())
-            start = int(start)
-            length = int(length)
-            payload_length = int(payload_length)
+            path = header[1:].decode()
+            start = int.from_bytes(arguments[0:8])
+            length = int.from_bytes(arguments[8:16])
+            payload_length = int.from_bytes(arguments[16:24])
             coefficient_bytes = math.ceil(payload_length / 8)
-            # TODO: remove requirement to base64 decode
-            nonce = base64.b64decode(nonce)
-            cata = base64.b64decode(cata)
-            data = base64.b64decode(data)
+            nonce = arguments[24:36]
+            cata_length = int.from_bytes(arguments[36:38])
+            cata = arguments[38:38+cata_length]
+            data_length = int.from_bytes(arguments[38+cata_length:38+cata_length+2])
+            data = arguments[38+cata_length+2:38+cata_length+2+data_length]
             coefficients = []
             # grab `coefficient_bytes` number of bytes at a time and use int.from_bytes w/ "big" endian
             for i in range(0, len(cata), coefficient_bytes):

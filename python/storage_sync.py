@@ -101,7 +101,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case Command.READ:
 			length = kwargs["length"]
 			reads[str(path)] = bytearray(length)
-			output = f"{Command.READ.value}:{path}{SEP}{payload}{SEP}{length}\n".encode()
+			output = f"{Command.READ.value}{SEP}{path}{SEP}{payload}{SEP}{length}\n".encode()
 		case Command.STATS:
 			output = f"{Command.STATS.value}:{path}\n".encode()
 		case Command.REMOVE:
@@ -155,8 +155,8 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 @thread
 def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | str, payload = None, **kwargs):
 	"""Send a file, e.g. a write command, with network-coding and transmit over UDP"""
-	start = kwargs["start"]
-	length = kwargs["length"]
+	start: int = kwargs["start"]
+	length: int = kwargs["length"]
 	payload: bytes
 	# encryption, RFC 7539 ChaCha20
 	# TODO: add MAC support with ChaCha20-Poly1305 as per https://pycryptodome.readthedocs.io/en/latest/src/cipher/chacha20_poly1305.html
@@ -184,12 +184,19 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 		packet = int("".join(map(str, packet)), 2)
 		cata.extend(coefficient)
 		data.extend((packet,))
-	# TODO remove requirement to base64 encode
-	nonce = base64.b64encode(cipher.nonce)
-	cata = base64.b64encode(bytes(cata))
-	data = base64.b64encode(bytes(data))
+	output = command.value.to_bytes(1)
+	output += str(path).encode()
+	output += SEP.encode()
+	output += start.to_bytes(8)
+	output += length.to_bytes(8)
+	output += payload_length.to_bytes(8)
+	output += cipher.nonce  # 12 bytes
+	output += len(cata).to_bytes(2)
+	output += bytes(cata)
+	output += len(data).to_bytes(2)
+	output += bytes(data)
+	output += "\n".encode()
 	# transmission
-	output = f"{command.value}:{path}{SEP}{start}{SEP}{length}{SEP}{payload_length}{SEP}{nonce.decode()}{SEP}{cata.decode()}{SEP}{data.decode()}\n".encode()
 	peer.data_connection.sendto(output, peer.data_address)
 
 
