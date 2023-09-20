@@ -1,6 +1,7 @@
 import base64
 import os
 import socket
+from time import sleep
 from diffiehellman import DiffieHellman
 from zeroconf import ServiceInfo, IPVersion
 
@@ -55,8 +56,7 @@ def request_pair(peer: Peer) -> bool:
         connection.close()
         return
     peer.connection = connection
-    # TODO: timeout
-    return storage_sync.transmit(peer, storage_sync.Command.PAIR).join()
+    return storage_sync.transmit(peer, storage_sync.Command.PAIR).join(30)
 
 
 def store_peer(peer: Peer):
