@@ -85,7 +85,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case command.CONNECT:
 			output = f"{Command.CONNECT.value}:{SEP.join([str(version) for version in SUPPORTED_VERSIONS])}\n".encode()
 		case command.KEY:
-			output = f"key?{payload.decode()}\n".encode()
+			output = f"{Command.KEY.value}:{payload.decode()}\n".encode()
 		case command.SYNC:
 			output = f"sync?\n".encode()
 		case command.READY:
@@ -125,9 +125,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 			data = data.decode().removesuffix("\n")
 			return data
 		case Command.KEY:
-			data = peer.connection.recv(len(output))
-			data = data.decode().removesuffix("\n")
-			return data
+			return peer.connection.recv(len(output))
 		case Command.SYNC:
 			data = peer.connection.recv(1024)
 			data = data.decode().removesuffix("\n")

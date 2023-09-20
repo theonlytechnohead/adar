@@ -57,15 +57,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     self.wfile.write(b"\n")
                     continue
                 self.data = str(self.raw_data.strip(), "utf-8")
-                if self.data.startswith("key?"):
-                    print(f"\tkey request from {peer.friendly_name}")
-                    if peer.generator == None:
-                        peer.generator = DiffieHellman(group=14, key_bits=1024)
-                    public_key = peer.generator.get_public_key()
-                    other_key = base64.b64decode(self.raw_data[4:-1])
-                    peer.shared_key = peer.generator.generate_shared_key(other_key)
-                    self.data = "key!".encode() + base64.b64encode(public_key) + "\n".encode()
-                elif self.data.startswith("sync?"):
+                if self.data.startswith("sync?"):
                     print(f"\tsync request from {peer.friendly_name}")
                     self.data = "0".encode()
                     timeout = 10
@@ -113,6 +105,14 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             if peer.version == None:
                                 break
                             self.data = f"{peer.version}".encode()
+                        case storage_sync.Command.KEY:
+                            print(f"\tkey request from {peer.friendly_name}")
+                            if peer.generator == None:
+                                peer.generator = DiffieHellman(group=14, key_bits=1024)
+                            public_key = peer.generator.get_public_key()
+                            other_key = base64.b64decode(self.raw_data[len(storage_sync.Command.KEY):-1])
+                            peer.shared_key = peer.generator.generate_shared_key(other_key)
+                            self.data = public_key
                         case storage_sync.Command.LIST:
                             path = arguments
                             folders, files = storage_sync.list_local(path)
