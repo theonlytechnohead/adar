@@ -81,7 +81,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     case storage_sync.Command.KEY:
                         print(f"\tkey request from {peer.friendly_name}")
                         if peer.generator == None:
-                            peer.generator = DiffieHellman(group=14, key_bits=1024)
+                            peer.generator = DiffieHellman(group=16, key_bits=1024)
                         public_key = peer.generator.get_public_key()
                         other_key = base64.b64decode(self.raw_data[2:-1])
                         peer.shared_key = peer.generator.generate_shared_key(other_key)
