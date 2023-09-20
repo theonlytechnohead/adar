@@ -87,7 +87,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case command.KEY:
 			output = f"{Command.KEY.value}:{payload.decode()}\n".encode()
 		case command.SYNC:
-			output = f"sync?\n".encode()
+			output = f"{Command.SYNC.value}\n".encode()
 		case command.READY:
 			output = f"ready\n".encode()
 		case command.DISCONNECT:

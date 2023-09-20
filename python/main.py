@@ -57,18 +57,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     self.wfile.write(b"\n")
                     continue
                 self.data = str(self.raw_data.strip(), "utf-8")
-                if self.data.startswith("sync?"):
-                    print(f"\tsync request from {peer.friendly_name}")
-                    self.data = "0".encode()
-                    timeout = 10
-                    while peer.connection == None and peer.shared_key == None and peer.data_connection == None:
-                        sleep(0.001)
-                        timeout -= 0.001
-                        if timeout <= 0:
-                            break
-                    if 0 < timeout:
-                        self.data = "1".encode()
-                elif self.data.startswith("ready"):
+                if self.data.startswith("ready"):
                     print(f"\tready request from {peer.friendly_name}")
                     self.data = "0".encode()
                     timeout = 10
@@ -113,6 +102,17 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             other_key = base64.b64decode(self.raw_data[len(storage_sync.Command.KEY):-1])
                             peer.shared_key = peer.generator.generate_shared_key(other_key)
                             self.data = public_key
+                        case storage_sync.Command.SYNC:
+                            print(f"\tsync request from {peer.friendly_name}")
+                            self.data = "0".encode()
+                            timeout = 10
+                            while peer.connection == None and peer.shared_key == None and peer.data_connection == None:
+                                sleep(0.001)
+                                timeout -= 0.001
+                                if timeout <= 0:
+                                    break
+                            if 0 < timeout:
+                                self.data = "1".encode()
                         case storage_sync.Command.LIST:
                             path = arguments
                             folders, files = storage_sync.list_local(path)
