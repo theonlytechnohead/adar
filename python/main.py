@@ -194,7 +194,7 @@ class AdarDataHandler():
         if command == storage_sync.Command.READ:
             """Received a read request, respond with network-coded data"""
             print("UDP", f"received a read request from {peer.friendly_name}")
-            path, start, length = arguments.split(storage_sync.SEP)
+            path, start, length = arguments.decode().split(storage_sync.SEP)
             start = int(start)
             length = int(length)
             data = storage_sync.read_local(path, start, length)
