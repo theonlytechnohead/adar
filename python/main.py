@@ -57,18 +57,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     self.wfile.write(b"\n")
                     continue
                 self.data = str(self.raw_data.strip(), "utf-8")
-                if self.data.startswith("ready"):
-                    print(f"\tready request from {peer.friendly_name}")
-                    self.data = "0".encode()
-                    timeout = 10
-                    while not peer.we_ready:
-                        sleep(0.001)
-                        timeout -= 0.001
-                        if timeout <= 0:
-                            break
-                    if 0 < timeout:
-                        self.data = "1".encode()
-                elif self.data.startswith("bye"):
+                if self.data.startswith("bye"):
                     if peer == None:
                         break
                     print(f"{peer.friendly_name} said bye")
@@ -107,6 +96,17 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             self.data = "0".encode()
                             timeout = 10
                             while peer.connection == None and peer.shared_key == None and peer.data_connection == None:
+                                sleep(0.001)
+                                timeout -= 0.001
+                                if timeout <= 0:
+                                    break
+                            if 0 < timeout:
+                                self.data = "1".encode()
+                        case storage_sync.Command.READY:
+                            print(f"\tready request from {peer.friendly_name}")
+                            self.data = "0".encode()
+                            timeout = 10
+                            while not peer.we_ready:
                                 sleep(0.001)
                                 timeout -= 0.001
                                 if timeout <= 0:

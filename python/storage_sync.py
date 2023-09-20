@@ -89,7 +89,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case command.SYNC:
 			output = f"{Command.SYNC.value}\n".encode()
 		case command.READY:
-			output = f"ready\n".encode()
+			output = f"{Command.READY.value}\n".encode()
 		case command.DISCONNECT:
 			output = f"bye\n".encode()
 		case Command.CREATE:
