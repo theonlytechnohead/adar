@@ -49,13 +49,14 @@ def request_pair(peer: Peer) -> bool:
     address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
     print(f"\tpairing to {address}")
     connection = socket.create_connection((address, PORT))
+    # TODO: use standard peer identification method
     if connection.getpeername()[0] not in peer.addresses:
         connection.shutdown(socket.SHUT_RDWR)
         connection.close()
         return
     peer.connection = connection
-    received = storage_sync.transmit(peer, storage_sync.Command.PAIR).join()
-    return True if received == "sure" else False
+    # TODO: timeout
+    return storage_sync.transmit(peer, storage_sync.Command.PAIR).join()
 
 
 def store_peer(peer: Peer):

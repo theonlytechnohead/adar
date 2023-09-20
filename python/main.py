@@ -57,10 +57,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     self.wfile.write(b"\n")
                     continue
                 self.data = str(self.raw_data.strip(), "utf-8")
-                if self.data.startswith("pair?"):
-                    # TODO: check with user that pairing is okay
-                    self.data = "sure".encode()
-                elif self.data.startswith("connect?"):
+                if self.data.startswith("connect?"):
                     print(f"\tconnection request from {self.client_address[0]}, identifying...")
                     self.data = "0".encode()
                     peer = identify_peer(self.client_address[0])
@@ -112,6 +109,10 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     command = storage_sync.Command(int(self.data.split(":", 1)[0]))
                     arguments = self.data.strip().split(":", 1)[1]
                     match command:
+                        case storage_sync.Command.PAIR:
+                            self.data = "0".encode()
+                            # TODO: check with user that pairing is okay
+                            self.data = "1".encode()
                         case storage_sync.Command.LIST:
                             path = arguments
                             folders, files = storage_sync.list_local(path)

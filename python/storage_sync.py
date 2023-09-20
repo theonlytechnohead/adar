@@ -81,7 +81,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 	output = "".encode()
 	match command:
 		case command.PAIR:
-			output = f"pair?{SEP.join([str(version) for version in SUPPORTED_VERSIONS])}\n".encode()
+			output = f"{Command.PAIR.value}:{SEP.join([str(version) for version in SUPPORTED_VERSIONS])}\n".encode()
 		case command.CONNECT:
 			output = f"connect?{SEP.join([str(version) for version in SUPPORTED_VERSIONS])}\n".encode()
 		case command.KEY:
@@ -119,7 +119,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case Command.PAIR:
 			data = peer.connection.recv(1024)
 			data = data.decode().removesuffix("\n")
-			return data
+			return data == "1"
 		case Command.CONNECT:
 			data = peer.connection.recv(1024)
 			data = data.decode().removesuffix("\n")
