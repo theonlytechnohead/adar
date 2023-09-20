@@ -62,8 +62,8 @@ class ThreadWithReturnValue(threading.Thread):
 	def run(self):
 		self._return = self._target(*self._args, **self._kwargs)
 
-	def join(self):
-		threading.Thread.join(self)
+	def join(self, timeout: float | None = None):
+		threading.Thread.join(self, timeout)
 		return self._return
 
 
