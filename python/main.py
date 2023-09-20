@@ -57,7 +57,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     self.wfile.write(b"\n")
                     continue
                 self.data = str(self.raw_data.strip(), "utf-8")
-                if peer.we_ready and peer.ready: print("TCP", peer.friendly_name, self.data)
+                if peer and peer.we_ready and peer.ready: print("TCP", peer.friendly_name, self.data)
                 # TODO: test for command first, then determine whether arguments need to be split off
                 command = storage_sync.Command(int(self.data.split(":", 1)[0]))
                 arguments = self.data.strip().split(":", 1)[1]
@@ -83,7 +83,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         if peer.generator == None:
                             peer.generator = DiffieHellman(group=14, key_bits=1024)
                         public_key = peer.generator.get_public_key()
-                        other_key = base64.b64decode(self.raw_data[len(storage_sync.Command.KEY):-1])
+                        other_key = base64.b64decode(self.raw_data[2:-1])
                         peer.shared_key = peer.generator.generate_shared_key(other_key)
                         self.data = public_key
                     case storage_sync.Command.SYNC:
@@ -135,7 +135,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         path = arguments
                         storage_sync.remove_local(path)
                         self.data = "".encode()
-            self.wfile.write(self.data)
+                self.wfile.write(self.data)
 
 
 class dual_stack(socketserver.ThreadingTCPServer):
