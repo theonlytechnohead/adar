@@ -72,7 +72,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         peer = identify_peer(self.client_address[0])
                         if peer == None:
                             print("\ttimed out trying to identify")
-                            continue
+                            break
                         # TODO: store this peer persistently for this connection
                         print(f"\tidentified peer: {peer.friendly_name}")
                         if peer.version == None:
@@ -112,7 +112,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         if peer == None:
                             break
                         print(f"{peer.friendly_name} said bye")
-                        peer.connection.shutdown(socket.SHUT_RD)
+                        self.finish()
                     case storage_sync.Command.LIST:
                         path = arguments
                         folders, files = storage_sync.list_local(path)
@@ -289,5 +289,5 @@ if __name__ == "__main__":
     data_server.start()
     service = advertise()
     while not stop:
-        sleep(1)
+        sleep(0.1)
     print("\tdone")
