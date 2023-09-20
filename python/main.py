@@ -58,6 +58,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     continue
                 self.data = str(self.raw_data.strip(), "utf-8")
                 if peer.we_ready and peer.ready: print("TCP", peer.friendly_name, self.data)
+                # TODO: test for command first, then determine whether arguments need to be split off
                 command = storage_sync.Command(int(self.data.split(":", 1)[0]))
                 arguments = self.data.strip().split(":", 1)[1]
                 match command:
