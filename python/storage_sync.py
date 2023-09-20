@@ -1,4 +1,3 @@
-import base64
 import math
 import os
 import pathlib
@@ -162,7 +161,6 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	# TODO: add MAC support with ChaCha20-Poly1305 as per https://pycryptodome.readthedocs.io/en/latest/src/cipher/chacha20_poly1305.html
 	cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=get_random_bytes(12))
 	ciphertext = cipher.encrypt(payload)
-	ciphertext = base64.b64encode(ciphertext)
 	payload_length = len(ciphertext)
 	coefficient_bytes = math.ceil(payload_length / 8)
 	# encoding

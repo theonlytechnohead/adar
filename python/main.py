@@ -231,9 +231,8 @@ class AdarDataHandler():
                 data.extend((packet,))
             data = bytes(data)
             # decryption, ChaCha20
-            ciphertext = base64.b64decode(data)
             cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=nonce)
-            plaintext = cipher.decrypt(ciphertext)
+            plaintext = cipher.decrypt(data)
         match command:
             case storage_sync.Command.READ:
                 storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=start, length=length)
