@@ -288,8 +288,12 @@ def read(path: str, start: int, length: int) -> bytes:
 	# TODO: switch to events rather than polling?
 	if str(path) not in reads:
 		return bytes()
+	timeout = 10
 	while type(reads[str(path)]) == bytearray:
 		sleep(0.001)
+		timeout -= 0.001
+		if timeout < 0:
+			return bytes()
 	data = bytes(reads[str(path)])
 	del reads[str(path)]
 	return data
