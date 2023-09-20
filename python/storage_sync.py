@@ -101,7 +101,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case Command.READ:
 			length = kwargs["length"]
 			reads[str(path)] = bytearray(length)
-			output = f"{Command.READ.value}{SEP}{path}{SEP}{payload}{SEP}{length}\n".encode()
+			output = Command.READ.value.to_bytes() + f"{SEP}{path}{SEP}{payload}{SEP}{length}\n".encode()
 		case Command.STATS:
 			output = f"{Command.STATS.value}:{path}\n".encode()
 		case Command.REMOVE:
