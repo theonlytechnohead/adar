@@ -91,7 +91,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case command.READY:
 			output = f"{Command.READY.value}\n".encode()
 		case command.DISCONNECT:
-			output = f"bye\n".encode()
+			output = f"{Command.DISCONNECT.value}\n".encode()
 		case Command.CREATE:
 			output = f"{Command.CREATE.value}:{path}{SEP}{payload}\n".encode()
 		case Command.RENAME:

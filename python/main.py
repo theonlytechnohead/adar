@@ -57,85 +57,84 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     self.wfile.write(b"\n")
                     continue
                 self.data = str(self.raw_data.strip(), "utf-8")
-                if self.data.startswith("bye"):
-                    if peer == None:
-                        break
-                    print(f"{peer.friendly_name} said bye")
-                    peer.connection.shutdown(socket.SHUT_RD)
-                else:
-                    if peer.we_ready and peer.ready: print("TCP", peer.friendly_name, self.data)
-                    command = storage_sync.Command(int(self.data.split(":", 1)[0]))
-                    arguments = self.data.strip().split(":", 1)[1]
-                    match command:
-                        case storage_sync.Command.PAIR:
-                            self.data = "0".encode()
-                            # TODO: check with user that pairing is okay
-                            self.data = "1".encode()
-                        case storage_sync.Command.CONNECT:
-                            print(f"\tconnection request from {self.client_address[0]}, identifying...")
-                            self.data = "0".encode()
-                            peer = identify_peer(self.client_address[0])
-                            if peer == None:
-                                print("\ttimed out trying to identify")
-                                continue
-                            # TODO: store this peer persistently for this connection
-                            print(f"\tidentified peer: {peer.friendly_name}")
-                            if peer.version == None:
+                if peer.we_ready and peer.ready: print("TCP", peer.friendly_name, self.data)
+                command = storage_sync.Command(int(self.data.split(":", 1)[0]))
+                arguments = self.data.strip().split(":", 1)[1]
+                match command:
+                    case storage_sync.Command.PAIR:
+                        self.data = "0".encode()
+                        # TODO: check with user that pairing is okay
+                        self.data = "1".encode()
+                    case storage_sync.Command.CONNECT:
+                        print(f"\tconnection request from {self.client_address[0]}, identifying...")
+                        self.data = "0".encode()
+                        peer = identify_peer(self.client_address[0])
+                        if peer == None:
+                            print("\ttimed out trying to identify")
+                            continue
+                        # TODO: store this peer persistently for this connection
+                        print(f"\tidentified peer: {peer.friendly_name}")
+                        if peer.version == None:
+                            break
+                        self.data = f"{peer.version}".encode()
+                    case storage_sync.Command.KEY:
+                        print(f"\tkey request from {peer.friendly_name}")
+                        if peer.generator == None:
+                            peer.generator = DiffieHellman(group=14, key_bits=1024)
+                        public_key = peer.generator.get_public_key()
+                        other_key = base64.b64decode(self.raw_data[len(storage_sync.Command.KEY):-1])
+                        peer.shared_key = peer.generator.generate_shared_key(other_key)
+                        self.data = public_key
+                    case storage_sync.Command.SYNC:
+                        print(f"\tsync request from {peer.friendly_name}")
+                        self.data = "0".encode()
+                        timeout = 10
+                        while peer.connection == None and peer.shared_key == None and peer.data_connection == None:
+                            sleep(0.001)
+                            timeout -= 0.001
+                            if timeout <= 0:
                                 break
-                            self.data = f"{peer.version}".encode()
-                        case storage_sync.Command.KEY:
-                            print(f"\tkey request from {peer.friendly_name}")
-                            if peer.generator == None:
-                                peer.generator = DiffieHellman(group=14, key_bits=1024)
-                            public_key = peer.generator.get_public_key()
-                            other_key = base64.b64decode(self.raw_data[len(storage_sync.Command.KEY):-1])
-                            peer.shared_key = peer.generator.generate_shared_key(other_key)
-                            self.data = public_key
-                        case storage_sync.Command.SYNC:
-                            print(f"\tsync request from {peer.friendly_name}")
-                            self.data = "0".encode()
-                            timeout = 10
-                            while peer.connection == None and peer.shared_key == None and peer.data_connection == None:
-                                sleep(0.001)
-                                timeout -= 0.001
-                                if timeout <= 0:
-                                    break
-                            if 0 < timeout:
-                                self.data = "1".encode()
-                        case storage_sync.Command.READY:
-                            print(f"\tready request from {peer.friendly_name}")
-                            self.data = "0".encode()
-                            timeout = 10
-                            while not peer.we_ready:
-                                sleep(0.001)
-                                timeout -= 0.001
-                                if timeout <= 0:
-                                    break
-                            if 0 < timeout:
-                                self.data = "1".encode()
-                        case storage_sync.Command.LIST:
-                            path = arguments
-                            folders, files = storage_sync.list_local(path)
-                            folders = f"{storage_sync.SEP}".join(folders)
-                            files = f"{storage_sync.SEP}".join(files)
-                            self.data = f"{folders}:{files}\n".encode()
-                        case storage_sync.Command.STATS:
-                            path = arguments
-                            size, ctime, mtime, atime = storage_sync.stats_local(path)
-                            self.data = f"{size}{storage_sync.SEP}{ctime}{storage_sync.SEP}{mtime}{storage_sync.SEP}{atime}\n".encode()
-                        case storage_sync.Command.CREATE:
-                            path, directory = arguments.split(storage_sync.SEP)
-                            storage_sync.create_local(path, bool(int(directory)))
-                            self.data = "".encode()
-                        case storage_sync.Command.RENAME:
-                            path, new_path = arguments.split(storage_sync.SEP)
-                            storage_sync.rename_local(path, new_path)
-                            self.data = "".encode()
-                        case storage_sync.Command.REMOVE:
-                            path = arguments
-                            storage_sync.remove_local(path)
-                            self.data = "".encode()
-                self.wfile.write(self.data)
+                        if 0 < timeout:
+                            self.data = "1".encode()
+                    case storage_sync.Command.READY:
+                        print(f"\tready request from {peer.friendly_name}")
+                        self.data = "0".encode()
+                        timeout = 10
+                        while not peer.we_ready:
+                            sleep(0.001)
+                            timeout -= 0.001
+                            if timeout <= 0:
+                                break
+                        if 0 < timeout:
+                            self.data = "1".encode()
+                    case storage_sync.Command.DISCONNECT:
+                        if peer == None:
+                            break
+                        print(f"{peer.friendly_name} said bye")
+                        peer.connection.shutdown(socket.SHUT_RD)
+                    case storage_sync.Command.LIST:
+                        path = arguments
+                        folders, files = storage_sync.list_local(path)
+                        folders = f"{storage_sync.SEP}".join(folders)
+                        files = f"{storage_sync.SEP}".join(files)
+                        self.data = f"{folders}:{files}\n".encode()
+                    case storage_sync.Command.STATS:
+                        path = arguments
+                        size, ctime, mtime, atime = storage_sync.stats_local(path)
+                        self.data = f"{size}{storage_sync.SEP}{ctime}{storage_sync.SEP}{mtime}{storage_sync.SEP}{atime}\n".encode()
+                    case storage_sync.Command.CREATE:
+                        path, directory = arguments.split(storage_sync.SEP)
+                        storage_sync.create_local(path, bool(int(directory)))
+                        self.data = "".encode()
+                    case storage_sync.Command.RENAME:
+                        path, new_path = arguments.split(storage_sync.SEP)
+                        storage_sync.rename_local(path, new_path)
+                        self.data = "".encode()
+                    case storage_sync.Command.REMOVE:
+                        path = arguments
+                        storage_sync.remove_local(path)
+                        self.data = "".encode()
+            self.wfile.write(self.data)
 
 
 class dual_stack(socketserver.ThreadingTCPServer):
