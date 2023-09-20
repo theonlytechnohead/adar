@@ -57,19 +57,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     self.wfile.write(b"\n")
                     continue
                 self.data = str(self.raw_data.strip(), "utf-8")
-                if self.data.startswith("connect?"):
-                    print(f"\tconnection request from {self.client_address[0]}, identifying...")
-                    self.data = "0".encode()
-                    peer = identify_peer(self.client_address[0])
-                    if peer == None:
-                        print("\ttimed out trying to identify")
-                        continue
-                    # TODO: store this peer persistently for this connection
-                    print(f"\tidentified peer: {peer.friendly_name}")
-                    if peer.version == None:
-                        break
-                    self.data = f"{peer.version}".encode()
-                elif self.data.startswith("key?"):
+                if self.data.startswith("key?"):
                     print(f"\tkey request from {peer.friendly_name}")
                     if peer.generator == None:
                         peer.generator = DiffieHellman(group=14, key_bits=1024)
@@ -113,6 +101,18 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             self.data = "0".encode()
                             # TODO: check with user that pairing is okay
                             self.data = "1".encode()
+                        case storage_sync.Command.CONNECT:
+                            print(f"\tconnection request from {self.client_address[0]}, identifying...")
+                            self.data = "0".encode()
+                            peer = identify_peer(self.client_address[0])
+                            if peer == None:
+                                print("\ttimed out trying to identify")
+                                continue
+                            # TODO: store this peer persistently for this connection
+                            print(f"\tidentified peer: {peer.friendly_name}")
+                            if peer.version == None:
+                                break
+                            self.data = f"{peer.version}".encode()
                         case storage_sync.Command.LIST:
                             path = arguments
                             folders, files = storage_sync.list_local(path)
