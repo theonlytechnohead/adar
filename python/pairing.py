@@ -1,7 +1,7 @@
 import base64
 import os
 import socket
-from time import sleep
+
 from diffiehellman import DiffieHellman
 from zeroconf import ServiceInfo, IPVersion
 
