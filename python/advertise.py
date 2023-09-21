@@ -14,27 +14,43 @@ this_name = f"{socket.gethostname()}.{SERVICE}"
 class AdarListener(ServiceListener):
     def add_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         info = zc.get_service_info(type_, name)
-        if info.properties[b"uuid"].decode() != ID:
-            peer = add_peer(info)
-            print(f"Discovered {peer.friendly_name}")
-            compatible_versions = [version for version in peer.versions if version in SUPPORTED_VERSIONS]
-            if 0 < len(compatible_versions):
-                peer.version = max(compatible_versions)
-                paired = check_pair(peer)
-                if not paired:
-                    paired = pair(peer)
-                if paired:
-                    connected = connect(peer)
-                    if connected:
-                        short_key = "-".join(f"{int(bit):03d}" for bit in peer.shared_key[:2])
-                        print(f"\tkey: {short_key}")
-                        sync = storage_sync.transmit(peer, storage_sync.Command.SYNC).join()
-                        if sync:
-                            peer.we_ready = storage_sync.sync().join()
-                            print("we are ready, telling peer")
-                            peer.ready = storage_sync.transmit(peer, storage_sync.Command.READY).join()
+        if info.properties[b"uuid"].decode() == ID:
+            # this is us, ignore
+            return
+        # TODO: check if peer is already connected
+        peer = add_peer(info)
+        print(f"Discovered {peer.friendly_name}")
+        compatible_versions = [version for version in peer.versions if version in SUPPORTED_VERSIONS]
+        if 0 == len(compatible_versions):
+            # no compatible versions found, ignore
+            return
+        peer.version = max(compatible_versions)
+        paired = check_pair(peer)
+        if not paired:
+            paired = pair(peer)
+        if not paired:
+            # they didn't want to pair, ignore
+            # TODO: remove peer from list
+            return
+        connected = connect(peer)
+        if not connected:
+            # they didn't want to, or couldn't connect, ignore
+            # TODO: remove peer from list
+            return
+        short_key = "-".join(f"{int(bit):03d}" for bit in peer.shared_key[:2])
+        print(f"\tkey: {short_key}")
+        sync = storage_sync.transmit(peer, storage_sync.Command.SYNC).join()
+        if not sync:
+            # sync failed, ignore
+            # TODO: retry? or remove peer from list
+            return
+        peer.we_ready = storage_sync.sync().join()
+        print("we are ready, telling peer")
+        peer.ready = storage_sync.transmit(peer, storage_sync.Command.READY).join()
+        # TODO: if peer is not ready, remove peer from list
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
+        # TODO: check if the service is one of our peers, and if the hash has changed, disconnect and try again?
         pass
 
     def remove_service(self, zc: Zeroconf, type_: str, name: str) -> None:
