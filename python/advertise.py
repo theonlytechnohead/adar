@@ -1,7 +1,6 @@
 import ipaddress
 import netifaces
 import socket
-from time import sleep
 from zeroconf import Zeroconf, ServiceListener, ServiceInfo, ServiceBrowser
 
 import storage_sync

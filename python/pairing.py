@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 import socket
 
@@ -60,13 +61,21 @@ def request_pair(peer: Peer) -> bool:
 
 
 def store_peer(peer: Peer):
-    if check_pair(peer):
-        return
-    with open("pairings", "a") as file:
-        file.write(f"{peer.uuid}")
-        if peer.shared_key != b"":
-            file.write(f":{base64.b64encode(peer.shared_key)}")
-        file.write("\n")
+    if os.path.exists("pairings"):
+        with open("pairings", "r") as file:
+            peers = json.load(file)
+    else:
+        with open("pairings", "x") as file:
+            peers = {}
+            data = json.dumps(peers, indent=4)
+            file.write(data)
+    if peer.uuid not in peers:
+        p = []
+        p.append(peer.secure_hash().hex())
+        peers[peer.uuid] = p
+    with open("pairings", "w") as file:
+        data = json.dumps(peers, indent=4)
+        file.write(data)
 
 
 def pair(peer: Peer) -> bool:
@@ -103,7 +112,6 @@ def connect(peer: Peer):
     our_key = peer.generator.get_public_key()
     other_key = storage_sync.transmit(peer, storage_sync.Command.KEY, None, base64.b64encode(our_key)).join()
     peer.shared_key = peer.generator.generate_shared_key(other_key)
-    store_peer(peer)
 
     family: socket.AddressFamily
     match peer.connection.family:
