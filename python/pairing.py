@@ -41,8 +41,9 @@ def check_service(info: ServiceInfo) -> tuple[str, socket.AddressFamily]:
 def check_pair(peer: Peer) -> bool:
     if os.path.exists("pairings"):
         with open("pairings") as file:
-            for line in file.readlines():
-                if peer.uuid in line:
+            peers = json.load(file)
+            if peer.uuid in peers:
+                if peer.secure_hash() == bytes.fromhex(peers[peer.uuid]):
                     return True
     return False
 
@@ -70,12 +71,10 @@ def store_peer(peer: Peer):
             data = json.dumps(peers, indent=4)
             file.write(data)
     if peer.uuid not in peers:
-        p = []
-        p.append(peer.secure_hash().hex())
-        peers[peer.uuid] = p
-    with open("pairings", "w") as file:
-        data = json.dumps(peers, indent=4)
-        file.write(data)
+        peers[peer.uuid] = peer.secure_hash().hex()
+        with open("pairings", "w") as file:
+            data = json.dumps(peers, indent=4)
+            file.write(data)
 
 
 def pair(peer: Peer) -> bool:
