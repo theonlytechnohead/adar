@@ -48,8 +48,8 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     continue
                 self.data = str(self.raw_data.strip(), "utf-8")
                 if peer and peer.we_ready and peer.ready: print("TCP", peer.friendly_name, self.data)
-                # TODO: test for command first, then determine whether arguments need to be split off
                 command = storage_sync.Command(int(self.data.split(":", 1)[0]))
+                # TODO: test for command first, then determine whether arguments need to be split off?
                 arguments = self.data.strip().split(":", 1)[1]
                 match command:
                     case storage_sync.Command.PAIR:
@@ -64,11 +64,9 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         if peer == None:
                             print("\ttimed out trying to identify")
                             break
-                        # TODO: store this peer persistently for this connection
                         print(f"\tidentified peer: {peer.friendly_name}")
-                        if peer.version == None:
-                            break
-                        self.data = f"{peer.version}".encode()
+                        if peer.version != None:
+                            self.data = f"{peer.version}".encode()
                     case storage_sync.Command.KEY:
                         print(f"\tkey request from {peer.friendly_name}")
                         if peer.generator == None:
