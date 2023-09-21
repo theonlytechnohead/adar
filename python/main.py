@@ -16,8 +16,6 @@ from peer import *
 stop = False
 
 
-
-
 class AdarHandler(socketserver.StreamRequestHandler):
     def handle(self) -> None:
         self.connection: socket.socket
@@ -233,7 +231,7 @@ class AdarDataHandler():
                 packet = int("".join(map(str, packet)), 2)
                 data.extend((packet,))
             data = bytes(data)
-            # decryption, ChaCha20
+            # decryption, XChaCha20-Poly1305
             cipher = ChaCha20_Poly1305.new(key=peer.shared_key[-32:], nonce=nonce)
             cipher.update(path.encode())
             plaintext = cipher.decrypt_and_verify(data, tag)
