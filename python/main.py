@@ -15,15 +15,7 @@ from peer import *
 
 stop = False
 
-def identify_peer(address: str, timeout: int = 10):
-    if address.startswith("::ffff:"):
-        address = address.removeprefix("::ffff:")
-    while 0 < timeout:
-        for peer in peer_list:
-            if address in peer.addresses:
-                return peer
-        sleep(1)
-        timeout -= 1
+
 
 
 class AdarHandler(socketserver.StreamRequestHandler):
@@ -69,7 +61,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                     case storage_sync.Command.CONNECT:
                         print(f"\tconnection request from {self.client_address[0]}, identifying...")
                         self.data = "0".encode()
-                        peer = identify_peer(self.client_address[0])
+                        peer = storage_sync.identify_peer(self.client_address[0])
                         if peer == None:
                             print("\ttimed out trying to identify")
                             break
@@ -177,7 +169,7 @@ class AdarDataHandler():
             print("UDP message is invalid:", message)
             return
         # identify peer
-        peer = identify_peer(address[0])
+        peer = storage_sync.identify_peer(address[0])
         if peer == None:
             print("\ttimed out trying to identify")
             return

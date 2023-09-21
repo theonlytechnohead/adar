@@ -52,8 +52,9 @@ def request_pair(peer: Peer) -> bool:
     address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
     print(f"\tpairing to {address}")
     connection = socket.create_connection((address, PORT))
-    # TODO: use standard peer identification method
-    if connection.getpeername()[0] not in peer.addresses:
+    peer = storage_sync.identify_peer(connection.getpeername()[0])
+    if peer == None:
+        print("\ttimed out trying to identify")
         connection.shutdown(socket.SHUT_RDWR)
         connection.close()
         return

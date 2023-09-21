@@ -49,6 +49,17 @@ def ntop(path: str, mount = True) -> str:
 	return str(pathlib.Path(MOUNT_POINT if mount else "", path))
 
 
+def identify_peer(address: str, timeout: int = 10):
+    if address.startswith("::ffff:"):
+        address = address.removeprefix("::ffff:")
+    while 0 < timeout:
+        for peer in peer_list:
+            if address in peer.addresses:
+                return peer
+        sleep(1)
+        timeout -= 1
+
+
 # How to get the return value from a thread? https://stackoverflow.com/a/6894023
 class ThreadWithReturnValue(threading.Thread):
 	def __init__(self, group=None, target=None, name=None, args=(), kwargs={}):
