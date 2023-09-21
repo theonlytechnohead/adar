@@ -4,7 +4,7 @@ import socket
 import select
 import socketserver
 import threading
-from Crypto.Cipher import ChaCha20
+from Crypto.Cipher import ChaCha20_Poly1305
 from time import sleep
 
 import storage_sync
@@ -193,15 +193,26 @@ class AdarDataHandler():
         if command == storage_sync.Command.DATA or command == storage_sync.Command.WRITE:
             """Recieved network-coded data, decode and decrypt"""
             path = header[1:].decode()
-            start = int.from_bytes(arguments[0:8])
-            length = int.from_bytes(arguments[8:16])
-            payload_length = int.from_bytes(arguments[16:24])
+            i = 0
+            start = int.from_bytes(arguments[i:i+8])
+            i += 8
+            length = int.from_bytes(arguments[i:i+8])
+            i += 8
+            payload_length = int.from_bytes(arguments[i:i+8])
+            i += 8
             coefficient_bytes = math.ceil(payload_length / 8)
-            nonce = arguments[24:36]
-            cata_length = int.from_bytes(arguments[36:38])
-            cata = arguments[38:38+cata_length]
-            data_length = int.from_bytes(arguments[38+cata_length:38+cata_length+2])
-            data = arguments[38+cata_length+2:38+cata_length+2+data_length]
+            nonce = arguments[i:i+24]
+            i += 24
+            cata_length = int.from_bytes(arguments[i:i+2])
+            i += 2
+            cata = arguments[i:i+cata_length]
+            i += cata_length
+            data_length = int.from_bytes(arguments[i:i+2])
+            i += 2
+            data = arguments[i:i+data_length]
+            i += data_length
+            tag = arguments[i:i+16]
+            i += 16
             coefficients = []
             # grab `coefficient_bytes` number of bytes at a time and use int.from_bytes w/ "big" endian
             for i in range(0, len(cata), coefficient_bytes):
@@ -223,8 +234,9 @@ class AdarDataHandler():
                 data.extend((packet,))
             data = bytes(data)
             # decryption, ChaCha20
-            cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=nonce)
-            plaintext = cipher.decrypt(data)
+            cipher = ChaCha20_Poly1305.new(key=peer.shared_key[-32:], nonce=nonce)
+            cipher.update(path.encode())
+            plaintext = cipher.decrypt_and_verify(data, tag)
         match command:
             case storage_sync.Command.READ:
                 storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=start, length=length)

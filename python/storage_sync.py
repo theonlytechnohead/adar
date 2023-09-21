@@ -2,7 +2,7 @@ import math
 import os
 import pathlib
 import threading
-from Crypto.Cipher import ChaCha20
+from Crypto.Cipher import ChaCha20_Poly1305
 from Crypto.Random import get_random_bytes
 from time import sleep
 
@@ -168,16 +168,16 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	start: int = kwargs["start"]
 	length: int = kwargs["length"]
 	payload: bytes
-	# encryption, RFC 7539 ChaCha20
-	# TODO: add MAC support with ChaCha20-Poly1305 as per https://pycryptodome.readthedocs.io/en/latest/src/cipher/chacha20_poly1305.html
-	cipher = ChaCha20.new(key=peer.shared_key[-32:], nonce=get_random_bytes(12))
-	ciphertext = cipher.encrypt(payload)
-	payload_length = len(ciphertext)
+	# encryption, XChaCha20-Poly1305 https://pycryptodome.readthedocs.io/en/latest/src/cipher/chacha20_poly1305.html
+	cipher = ChaCha20_Poly1305.new(key=peer.shared_key[-32:], nonce=get_random_bytes(24))
+	cipher.update(str(path).encode())
+	ciphertextx, tag = cipher.encrypt_and_digest(payload)
+	payload_length = len(ciphertextx)
 	coefficient_bytes = math.ceil(payload_length / 8)
 	# encoding
 	encoder = BinaryCoder(payload_length, 8, 1)
 	decoder = BinaryCoder(payload_length, 8, 1)
-	for i, byte in enumerate(ciphertext):
+	for i, byte in enumerate(ciphertextx):
 		coefficient = [0] * payload_length
 		coefficient[i] = 1
 		bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
@@ -199,11 +199,12 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	output += start.to_bytes(8)
 	output += length.to_bytes(8)
 	output += payload_length.to_bytes(8)
-	output += cipher.nonce  # 12 bytes
+	output += cipher.nonce  # 24 bytes
 	output += len(cata).to_bytes(2)
 	output += bytes(cata)
 	output += len(data).to_bytes(2)
 	output += bytes(data)
+	output += tag  # 16 bytes
 	output += "\n".encode()
 	# transmission
 	peer.data_connection.sendto(output, peer.data_address)
