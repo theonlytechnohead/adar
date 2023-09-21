@@ -54,6 +54,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                 match command:
                     case storage_sync.Command.PAIR:
                         self.data = "0".encode()
+                        # TODO: check compatibility
                         # TODO: check with user that pairing is okay
                         self.data = "1".encode()
                     case storage_sync.Command.CONNECT:

@@ -29,25 +29,41 @@ class AdarListener(ServiceListener):
         if not paired:
             paired = pair(peer)
         if not paired:
-            # they didn't want to pair, ignore
-            # TODO: remove peer from list
+            print(peer.friendly_name, "didn't pair")
+            if peer.connection != None:
+                peer.connection.shutdown(socket.SHUT_RDWR)
+                peer.connection.close()
+            peer_list.remove(peer)
+            del peer
             return
         connected = connect(peer)
         if not connected:
-            # they didn't want to, or couldn't connect, ignore
-            # TODO: remove peer from list
+            print("failed connecting to", peer.friendly_name)
+            if peer.connection != None:
+                peer.connection.shutdown(socket.SHUT_RDWR)
+                peer.connection.close()
+            peer_list.remove(peer)
+            del peer
             return
         short_key = "-".join(f"{int(bit):03d}" for bit in peer.shared_key[:2])
         print(f"\tkey: {short_key}")
         sync = storage_sync.transmit(peer, storage_sync.Command.SYNC).join()
         if not sync:
-            # sync failed, ignore
-            # TODO: retry? or remove peer from list
+            print(peer.friendly_name, "couldn't sync, disconnecting")
+            peer.connection.shutdown(socket.SHUT_RDWR)
+            peer.connection.close()
+            peer_list.remove(peer)
+            del peer
             return
         peer.we_ready = storage_sync.sync().join()
         print("we are ready, telling peer")
         peer.ready = storage_sync.transmit(peer, storage_sync.Command.READY).join()
-        # TODO: if peer is not ready, remove peer from list
+        if not peer.ready:
+            print(peer.friendly_name, "not ready, disconnecting")
+            peer.connection.shutdown(socket.SHUT_RDWR)
+            peer.connection.close()
+            peer_list.remove(peer)
+            del peer
 
     def update_service(self, zc: Zeroconf, type_: str, name: str) -> None:
         # TODO: check if the service is one of our peers, and if the hash has changed, disconnect and try again?

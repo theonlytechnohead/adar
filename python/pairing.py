@@ -49,7 +49,7 @@ def check_pair(peer: Peer) -> bool:
 
 
 def request_pair(peer: Peer) -> bool:
-    address = peer.fqdn.removesuffix(".") if peer.fqdn.endswith(".") else peer.fqdn
+    address = peer.fqdn.removesuffix(".")
     print(f"\tpairing to {address}")
     connection = socket.create_connection((address, PORT))
     peer = storage_sync.identify_peer(connection.getpeername()[0])
