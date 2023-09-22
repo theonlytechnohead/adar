@@ -128,18 +128,22 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 	match command:
 		case Command.PAIR:
 			data = peer.connection.recv(1024)
-			data = data.decode().removesuffix("\n")
-			return data == "1"
+			data = int.from_bytes(data)
+			return data == 1
 		case Command.CONNECT:
 			data = peer.connection.recv(1024)
-			data = data.decode().removesuffix("\n")
+			data = int.from_bytes(data)
 			return data
 		case Command.KEY:
 			return peer.connection.recv(len(output))
 		case Command.SYNC:
 			data = peer.connection.recv(1024)
-			data = data.decode().removesuffix("\n")
-			return data == "1"
+			data = int.from_bytes(data)
+			return data == 1
+		case Command.READY:
+			data = peer.connection.recv(1024)
+			data = int.from_bytes(data)
+			return data == 1
 		case Command.DISCONNECT:
 			peer.connection.shutdown(socket.SHUT_WR)
 		case Command.LIST:

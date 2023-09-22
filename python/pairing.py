@@ -105,7 +105,7 @@ def connect(peer: Peer):
             connection.close()
             return
         peer.connection = connection
-    version = int(storage_sync.transmit(peer, storage_sync.Command.CONNECT).join())
+    version: int = storage_sync.transmit(peer, storage_sync.Command.CONNECT).join()
     if version not in SUPPORTED_VERSIONS:
         return False
     peer.version = version
