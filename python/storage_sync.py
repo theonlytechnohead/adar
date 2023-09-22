@@ -127,27 +127,27 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 	# receipt and processing
 	match command:
 		case Command.PAIR:
-			data = peer.connection.recv(1024)
+			data = peer.connection.recv(1500)
 			data = int.from_bytes(data)
 			return data == 1
 		case Command.CONNECT:
-			data = peer.connection.recv(1024)
+			data = peer.connection.recv(1500)
 			data = int.from_bytes(data)
 			return data
 		case Command.KEY:
-			return peer.connection.recv(len(output))
+			return peer.connection.recv(1500)
 		case Command.SYNC:
-			data = peer.connection.recv(1024)
+			data = peer.connection.recv(1500)
 			data = int.from_bytes(data)
 			return data == 1
 		case Command.READY:
-			data = peer.connection.recv(1024)
+			data = peer.connection.recv(1500)
 			data = int.from_bytes(data)
 			return data == 1
 		case Command.DISCONNECT:
 			peer.connection.shutdown(socket.SHUT_WR)
 		case Command.LIST:
-			data = peer.connection.recv(1024)
+			data = peer.connection.recv(1500)
 			data = data.decode().removesuffix("\n")
 			folders, files = data.split(":")
 			folders = folders.split(SEP)
@@ -156,7 +156,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 			files = [file for file in files if file != ""]
 			return folders, files
 		case Command.STATS:
-			data = peer.connection.recv(1024)
+			data = peer.connection.recv(1500)
 			data = data.decode().removesuffix("\n")
 			size, ctime, mtime, atime = data.split(SEP)
 			size = int(size)

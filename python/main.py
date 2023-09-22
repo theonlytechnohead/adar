@@ -30,7 +30,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
             if readable and writable:
                 # try reading
                 try:
-                    self.raw_data = self.rfile.readline(2048)
+                    self.raw_data = self.rfile.readline(1500)
                 except:
                     # socket closed unexpectedly
                     break
@@ -157,7 +157,7 @@ class AdarDataHandler():
     def handle_connection(self, connection: socket.socket):
         # try reading
         try:
-            message, address = connection.recvfrom(2048)
+            message, address = connection.recvfrom(1500)
         except OSError:
             return
         # check if message end is received
