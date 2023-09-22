@@ -8,7 +8,11 @@ from constants import *
 
 def ls(path: str):
 	if os.name == "posix":
-		pass
+		path = ROOT_POINT + path
+		listing = os.listdir(path)
+		files = [f for f in listing if os.path.isfile(os.path.join(path, f))]
+		folders = [f for f in listing if os.path.isdir(os.path.join(path, f))]
+		return folders, files
 	if os.name == "nt":
 		root_path = os.path.join(ROOT_POINTS[0], path)
 		listing = os.listdir(root_path)
@@ -19,7 +23,10 @@ def ls(path: str):
 
 def stats(path: str):
 	if os.name == "posix":
-		pass
+		path = ROOT_POINT + path
+		stats = os.stat(path)
+		# TODO: use st_flags to get ctime
+		return stats.st_size, stats.st_ctime_ns, stats.st_mtime_ns, stats.st_atime_ns
 	if os.name == "nt":
 		total_size = 0
 		for root in ROOT_POINTS:
@@ -31,7 +38,11 @@ def stats(path: str):
 
 def time(path: str, ctime: int, mtime: int, atime: int):
 	if os.name == "posix":
-		pass
+		root_path = ROOT_POINT + path
+		os.utime(root_path, times=None, ns=(atime, mtime))
+		# TODO: use st_flags to set ctime
+		mount_path = MOUNT_POINT + path
+		os.utime(mount_path, times=None, ns=(atime, mtime))
 	if os.name == "nt":
 		ctime = ctime / 1_000_000_000  # convert ns to s
 		for root in ROOT_POINTS:
@@ -53,6 +64,7 @@ def create(path: str, directory: bool, **kwargs):
 			else:
 				return os.mkdir(path)
 		else:
+			# TODO: use st_flags to set ctime
 			if mode:
 				return os.open(path, os.O_WRONLY | os.O_CREAT, mode)
 			else:
