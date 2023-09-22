@@ -51,6 +51,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                 command = storage_sync.Command(int(self.data.split(":", 1)[0]))
                 # TODO: test for command first, then determine whether arguments need to be split off?
                 arguments = self.data.strip().split(":", 1)[1]
+                # TODO: check peer is connected and all is ready before processing any commands
                 match command:
                     case storage_sync.Command.PAIR:
                         self.data = int.to_bytes(0)
@@ -102,6 +103,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             break
                         print(f"{peer.friendly_name} said bye")
                         self.finish()
+                        return
                     case storage_sync.Command.LIST:
                         path = arguments
                         folders, files = storage_sync.list_local(path)
