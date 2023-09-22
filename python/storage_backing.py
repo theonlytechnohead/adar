@@ -25,7 +25,7 @@ def stats(path: str):
 	if os.name == "posix":
 		path = ROOT_POINT + path
 		stats = os.stat(path)
-		# TODO: use st_flags to get ctime
+		# TODO: use separate storage to get ctime
 		return stats.st_size, stats.st_ctime_ns, stats.st_mtime_ns, stats.st_atime_ns
 	if os.name == "nt":
 		total_size = 0
@@ -40,7 +40,7 @@ def time(path: str, ctime: int, mtime: int, atime: int):
 	if os.name == "posix":
 		root_path = ROOT_POINT + path
 		os.utime(root_path, times=None, ns=(atime, mtime))
-		# TODO: use st_flags to set ctime
+		# TODO: use separate storage to set ctime
 		mount_path = MOUNT_POINT + path
 		os.utime(mount_path, times=None, ns=(atime, mtime))
 	if os.name == "nt":
@@ -64,7 +64,7 @@ def create(path: str, directory: bool, **kwargs):
 			else:
 				return os.mkdir(path)
 		else:
-			# TODO: use st_flags to set ctime
+			# TODO: use separate storage to set ctime
 			if mode:
 				return os.open(path, os.O_WRONLY | os.O_CREAT, mode)
 			else:
