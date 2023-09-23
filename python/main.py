@@ -199,7 +199,7 @@ class AdarDataHandler():
             i += 8
             payload_length = int.from_bytes(arguments[i:i+8])
             i += 8
-            coefficient_bytes = math.ceil(payload_length / 8)
+            coefficient_bytes = max(math.ceil(payload_length / 8), 1)
             nonce = arguments[i:i+24]
             i += 24
             cata_length = int.from_bytes(arguments[i:i+2])
