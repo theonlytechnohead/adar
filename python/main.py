@@ -54,13 +54,13 @@ class AdarHandler(socketserver.StreamRequestHandler):
                 # TODO: check peer is connected and all is ready before processing any commands
                 match command:
                     case storage_sync.Command.PAIR:
-                        self.data = int.to_bytes(0)
+                        self.data = int.to_bytes(0, 1, "big")
                         # TODO: check compatibility
                         # TODO: check with user that pairing is okay
-                        self.data = int.to_bytes(1)
+                        self.data = int.to_bytes(1, 1, "big")
                     case storage_sync.Command.CONNECT:
                         print(f"\tconnection request from {self.client_address[0]}, identifying...")
-                        self.data = int.to_bytes(0)
+                        self.data = int.to_bytes(0, 1, "big")
                         peer = storage_sync.identify_peer(self.client_address[0])
                         if peer == None:
                             print("\ttimed out trying to identify")
@@ -78,7 +78,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         self.data = public_key
                     case storage_sync.Command.SYNC:
                         print(f"\tsync request from {peer.friendly_name}")
-                        self.data = int.to_bytes(0)
+                        self.data = int.to_bytes(0, 1, "big")
                         timeout = 10
                         while peer.connection == None and peer.shared_key == None and peer.data_connection == None:
                             sleep(0.001)
@@ -86,10 +86,10 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             if timeout <= 0:
                                 break
                         if 0 < timeout:
-                            self.data = int.to_bytes(1)
+                            self.data = int.to_bytes(1, 1, "big")
                     case storage_sync.Command.READY:
                         print(f"\tready request from {peer.friendly_name}")
-                        self.data = int.to_bytes(0)
+                        self.data = int.to_bytes(0, 1, "big")
                         timeout = 10
                         while not peer.we_ready:
                             sleep(0.001)
@@ -97,7 +97,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             if timeout <= 0:
                                 break
                         if 0 < timeout:
-                            self.data = int.to_bytes(1)
+                            self.data = int.to_bytes(1, 1, "big")
                     case storage_sync.Command.DISCONNECT:
                         if peer == None:
                             break
