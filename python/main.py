@@ -41,7 +41,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                 # check if message end is received
                 # TODO: maybe fetch more data / packets until end is recieved?
                 # though there may need to be additional checks to ensure that data isn't garbage along the way
-                if self.raw_data[-1].to_bytes() != b"\n":
+                if self.raw_data[-1].to_bytes(1, "big") != b"\n":
                     # error, invalid message!
                     print(f"TCP message is invalid:", self.raw_data)
                     self.wfile.write(b"\n")

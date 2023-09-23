@@ -8,7 +8,7 @@ from constants import *
 
 def ls(path: str):
 	if os.name == "posix":
-		path = ROOT_POINT + path
+		path = os.path.join(ROOT_POINT, path)
 		listing = os.listdir(path)
 		files = [f for f in listing if os.path.isfile(os.path.join(path, f))]
 		folders = [f for f in listing if os.path.isdir(os.path.join(path, f))]
@@ -23,7 +23,7 @@ def ls(path: str):
 
 def stats(path: str):
 	if os.name == "posix":
-		path = ROOT_POINT + path
+		path = os.path.join(ROOT_POINT, path)
 		stats = os.stat(path)
 		# TODO: use separate storage to get ctime
 		return stats.st_size, stats.st_ctime_ns, stats.st_mtime_ns, stats.st_atime_ns
@@ -38,10 +38,10 @@ def stats(path: str):
 
 def time(path: str, ctime: int, mtime: int, atime: int):
 	if os.name == "posix":
-		root_path = ROOT_POINT + path
+		root_path = os.path.join(ROOT_POINT, path)
 		os.utime(root_path, times=None, ns=(atime, mtime))
 		# TODO: use separate storage to set ctime
-		mount_path = MOUNT_POINT + path
+		mount_path = os.path.join(MOUNT_POINT, path)
 		os.utime(mount_path, times=None, ns=(atime, mtime))
 	if os.name == "nt":
 		ctime = ctime / 1_000_000_000  # convert ns to s
@@ -56,7 +56,7 @@ def time(path: str, ctime: int, mtime: int, atime: int):
 
 def create(path: str, directory: bool, **kwargs):
 	if os.name == "posix":
-		path = ROOT_POINT + path
+		path = os.path.join(ROOT_POINT, path)
 		mode = kwargs["mode"] if "mode" in kwargs else None
 		if directory:
 			if mode:
@@ -114,7 +114,7 @@ def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 
 def rename(path: str, new_path: str):
 	if os.name == "posix":
-		path = ROOT_POINT + path
+		path = os.path.join(ROOT_POINT, path)
 		new_path = ROOT_POINT + new_path
 		return os.rename(path, new_path)
 	if os.name == "nt":
@@ -135,7 +135,7 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 			os.lseek(handle, start, os.SEEK_SET)
 			return os.write(handle, data)
 		else:
-			path = ROOT_POINT + path
+			path = os.path.join(ROOT_POINT, path)
 			with open(path, "wb") as file:
 				file.write(data)
 	if os.name == "nt":
@@ -172,7 +172,7 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 
 def remove(path: str):
 	if os.name == "posix":
-		path = ROOT_POINT + path
+		path = os.path.join(ROOT_POINT, path)
 		if os.path.isdir(path):
 			return os.rmdir(path)
 		else:

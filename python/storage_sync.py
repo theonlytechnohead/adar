@@ -111,7 +111,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case Command.READ:
 			length = kwargs["length"]
 			reads[str(path)] = bytearray(length)
-			output = Command.READ.value.to_bytes() + f"{SEP}{path}{SEP}{payload}{SEP}{length}\n".encode()
+			output = Command.READ.value.to_bytes(1, "big") + f"{SEP}{path}{SEP}{payload}{SEP}{length}\n".encode()
 		case Command.STATS:
 			output = f"{Command.STATS.value}:{path}\n".encode()
 		case Command.REMOVE:
@@ -128,21 +128,21 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 	match command:
 		case Command.PAIR:
 			data = peer.connection.recv(1500)
-			data = int.from_bytes(data)
+			data = int.from_bytes(data, "big")
 			return data == 1
 		case Command.CONNECT:
 			data = peer.connection.recv(1500)
-			data = int.from_bytes(data)
+			data = int.from_bytes(data, "big")
 			return data
 		case Command.KEY:
 			return peer.connection.recv(1500)
 		case Command.SYNC:
 			data = peer.connection.recv(1500)
-			data = int.from_bytes(data)
+			data = int.from_bytes(data, "big")
 			return data == 1
 		case Command.READY:
 			data = peer.connection.recv(1500)
-			data = int.from_bytes(data)
+			data = int.from_bytes(data, "big")
 			return data == 1
 		case Command.DISCONNECT:
 			peer.connection.shutdown(socket.SHUT_WR)
