@@ -96,9 +96,11 @@ def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 			if not path.startswith("/"):
 				path = "/" + path
 			path = ROOT_POINT + path
+			output = bytes()
 			with open(path, "rb") as file:
 				file.seek(start)
-				return file.read(length)
+				output = file.read(length)
+			return output
 	if os.name == "nt":
 		output = bytearray(length)
 		read = 0

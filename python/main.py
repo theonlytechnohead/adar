@@ -193,20 +193,20 @@ class AdarDataHandler():
             """Recieved network-coded data, decode and decrypt"""
             path = header[1:].decode()
             i = 0
-            start = int.from_bytes(arguments[i:i+8])
+            start = int.from_bytes(arguments[i:i+8], "big")
             i += 8
-            length = int.from_bytes(arguments[i:i+8])
+            length = int.from_bytes(arguments[i:i+8], "big")
             i += 8
-            payload_length = int.from_bytes(arguments[i:i+8])
+            payload_length = int.from_bytes(arguments[i:i+8], "big")
             i += 8
             coefficient_bytes = max(math.ceil(payload_length / 8), 1)
             nonce = arguments[i:i+24]
             i += 24
-            cata_length = int.from_bytes(arguments[i:i+2])
+            cata_length = int.from_bytes(arguments[i:i+2], "big")
             i += 2
             cata = arguments[i:i+cata_length]
             i += cata_length
-            data_length = int.from_bytes(arguments[i:i+2])
+            data_length = int.from_bytes(arguments[i:i+2], "big")
             i += 2
             data = arguments[i:i+data_length]
             i += data_length
