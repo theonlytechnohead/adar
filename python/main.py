@@ -172,6 +172,12 @@ class AdarDataHandler():
         if peer == None:
             print("\ttimed out trying to identify")
             return
+        timeout = 10
+        while not peer.data_connection:
+            sleep(0.001)
+            timeout -= 0.001
+            if timeout < 0:
+                return
         # split command and arguments
         header, arguments = message.split(storage_sync.SEP.encode(), 1)
         try:
