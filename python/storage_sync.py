@@ -39,7 +39,7 @@ class Command(Enum):
 
 
 def pton(path: str) -> pathlib.PurePosixPath:
-	return pathlib.PurePosixPath("/", path.replace("\\", "/"))
+	return pathlib.PurePosixPath("/", str(path).replace("\\", "/"))
 
 
 def ntop(path: str, mount = True) -> str:
