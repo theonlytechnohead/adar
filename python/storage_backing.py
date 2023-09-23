@@ -8,6 +8,8 @@ from constants import *
 
 def ls(path: str):
 	if os.name == "posix":
+		if not path.startswith("/"):
+			path = "/" + path
 		path = ROOT_POINT + path
 		listing = os.listdir(path)
 		files = [f for f in listing if os.path.isfile(os.path.join(path, f))]
@@ -23,6 +25,8 @@ def ls(path: str):
 
 def stats(path: str):
 	if os.name == "posix":
+		if not path.startswith("/"):
+			path = "/" + path
 		path = ROOT_POINT + path
 		stats = os.stat(path)
 		# TODO: use separate storage to get ctime
@@ -38,6 +42,8 @@ def stats(path: str):
 
 def time(path: str, ctime: int, mtime: int, atime: int):
 	if os.name == "posix":
+		if not path.startswith("/"):
+			path = "/" + path
 		root_path = ROOT_POINT + path
 		os.utime(root_path, times=None, ns=(atime, mtime))
 		# TODO: use separate storage to set ctime

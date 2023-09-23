@@ -229,7 +229,8 @@ def explore(path: str):
 		explorable.append(folder)
 	for file in files:
 		if file not in local_files:
-			file = os.path.join(path, file)
+			if os.name == "nt":
+				file = os.path.join(path, file)
 			if DEBUG: print("creating local file:", file)
 			create_local(file, False)
 			if DEBUG: print("requesting remote file:", file)

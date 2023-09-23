@@ -163,7 +163,7 @@ class AdarDataHandler():
         # check if message end is received
         # TODO: maybe fetch more data / packets until end is recieved?
         # though there may need to be additional checks to ensure that data isn't garbage along the way
-        if message[-1].to_bytes() != b"\n":
+        if message[-1].to_bytes(1, "big") != b"\n":
             # error, invalid message!
             print("UDP message is invalid:", message)
             return
