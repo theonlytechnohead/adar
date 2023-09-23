@@ -62,6 +62,8 @@ def time(path: str, ctime: int, mtime: int, atime: int):
 
 def create(path: str, directory: bool, **kwargs):
 	if os.name == "posix":
+		if not path.startswith("/"):
+			path = "/" + path
 		path = ROOT_POINT + path
 		mode = kwargs["mode"] if "mode" in kwargs else None
 		if directory:
@@ -86,9 +88,17 @@ def create(path: str, directory: bool, **kwargs):
 
 def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 	if os.name == "posix":
-		handle = kwargs["handle"]
-		os.lseek(handle, start, os.SEEK_SET)
-		return os.read(handle, length)
+		if "handle" in kwargs:
+			handle = kwargs["handle"]
+			os.lseek(handle, start, os.SEEK_SET)
+			return os.read(handle, length)
+		else:
+			if not path.startswith("/"):
+				path = "/" + path
+			path = ROOT_POINT + path
+			with open(path, "rb") as file:
+				file.seek(start)
+				return file.read(length)
 	if os.name == "nt":
 		output = bytearray(length)
 		read = 0
@@ -120,6 +130,8 @@ def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 
 def rename(path: str, new_path: str):
 	if os.name == "posix":
+		if not path.startswith("/"):
+			path = "/" + path
 		path = ROOT_POINT + path
 		new_path = ROOT_POINT + new_path
 		return os.rename(path, new_path)
@@ -141,6 +153,8 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 			os.lseek(handle, start, os.SEEK_SET)
 			return os.write(handle, data)
 		else:
+			if not path.startswith("/"):
+				path = "/" + path
 			path = ROOT_POINT + path
 			with open(path, "wb") as file:
 				file.write(data)
@@ -178,6 +192,8 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 
 def remove(path: str):
 	if os.name == "posix":
+		if not path.startswith("/"):
+			path = "/" + path
 		path = ROOT_POINT + path
 		if os.path.isdir(path):
 			return os.rmdir(path)
