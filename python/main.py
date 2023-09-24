@@ -66,7 +66,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             print("\ttimed out trying to identify")
                             break
                         print(f"\tidentified peer: {peer.friendly_name}")
-                        if peer.version != None:
+                        if peer.version != None and check_pair(peer):
                             self.data = int.to_bytes(peer.version, 1, "big")
                     case storage_sync.Command.KEY:
                         print(f"\tkey request from {peer.friendly_name}")
