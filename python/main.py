@@ -66,7 +66,13 @@ class AdarHandler(socketserver.StreamRequestHandler):
                             print("\ttimed out trying to identify")
                             break
                         print(f"\tidentified peer: {peer.friendly_name}")
-                        if peer.version != None and check_pair(peer):
+                        timeout = 30
+                        while peer.version == None and not check_pair(peer):
+                            sleep(0.001)
+                            timeout -= 0.001
+                            if timeout < 0:
+                                break
+                        if 0 < timeout:
                             self.data = int.to_bytes(peer.version, 1, "big")
                     case storage_sync.Command.KEY:
                         print(f"\tkey request from {peer.friendly_name}")
