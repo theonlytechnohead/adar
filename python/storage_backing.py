@@ -38,6 +38,7 @@ def stats(path: str):
 			stats = os.stat(root_path)
 			total_size += stats.st_size
 		return total_size, stats.st_ctime_ns, stats.st_mtime_ns, stats.st_atime_ns
+		# TODO: retrieve from metadata file
 
 
 def time(path: str, ctime: int, mtime: int, atime: int):
@@ -58,6 +59,7 @@ def time(path: str, ctime: int, mtime: int, atime: int):
 		mount_path = os.path.join(MOUNT_POINT, path)
 		os.utime(mount_path, times=None, ns=(atime, mtime))
 		setctime(mount_path, ctime)
+		# TODO: update metadata file
 
 
 def create(path: str, directory: bool, **kwargs):
@@ -84,6 +86,7 @@ def create(path: str, directory: bool, **kwargs):
 				os.mkdir(root_path)
 			else:
 				open(root_path, "x").close()
+		# TODO create metadata file
 
 
 def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
@@ -128,6 +131,7 @@ def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 		for file in files:
 			file.close()
 		return bytes(output)[start:length]
+		# TODO: use metadata file
 
 
 def rename(path: str, new_path: str):
@@ -146,6 +150,7 @@ def rename(path: str, new_path: str):
 			except FileExistsError:
 				# something went wrong, it's probably not our fault though - ignore
 				return
+		# TODO: update metadata file
 
 
 def write(path: str, start: int, length: int, data: bytes, **kwargs):
@@ -172,6 +177,7 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 			return
 		written = 0
 		files = []
+		# TODO: use DATA_DIRECTORY with blocks and transmit over network
 		for root in ROOT_POINTS:
 			root_path = os.path.join(root, path)
 			file = open(root_path, "wb")
@@ -210,3 +216,4 @@ def remove(path: str):
 					shutil.rmtree(root_path)
 				else:
 					os.remove(root_path)
+		# TODO: remove metadata file
