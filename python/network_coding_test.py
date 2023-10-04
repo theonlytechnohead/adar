@@ -29,8 +29,8 @@ def main(packets: int = 1, length: int = 8):
     
     if decoder.packet_vector == encoder.packet_vector:
         efficiency = messages / packets
-        print(f"took {messages} messages to transmit {packets} packets ({efficiency * 100:.0f}%), {messages - packets} redundant")
-        print(f"coded size: {coded_size}, data size: {packets * packet_size} ({(coded_size / (packets * packet_size)) * 100:.0f}%)")
+        print(f"data packets: {packets}, transmitted packets: {messages} ({efficiency * 100:.0f}%), {messages - packets} overshoot")
+        print(f"data size: {packets * packet_size}, coded size: {coded_size},  ({(coded_size / (packets * packet_size)) * 100:.0f}%)")
         # for packet in decoder.packet_vector:
             # print(packet)
         return efficiency, (coded_size / (packets * packet_size)) * 100
@@ -44,11 +44,11 @@ if __name__ == "__main__":
     # main(2, 1500)
     efficiencies = []
     data_efficiencies = []
-    for n in range(1, 64, 8):
-        efficiency, data_efficiency = main(n, 1500)
+    for n in range(8, 65, 8):
+        efficiency, data_efficiency = main(n, 1024)
         efficiencies.append(efficiency)
         data_efficiencies.append(data_efficiency)
     average = sum(efficiencies) / len(efficiencies)
     data_average = sum(data_efficiencies) / len(data_efficiencies)
-    print(f"average efficiency: {average * 100:.0f}%")
-    print(f"average data efficiency: {data_average:.0f}%")
+    print(f"packet efficiency: {average * 100:.0f}%")
+    print(f"data efficiency: {data_average:.0f}%")

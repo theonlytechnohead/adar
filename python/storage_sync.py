@@ -8,6 +8,7 @@ from time import sleep
 
 import storage_backing
 
+from read_coded import ReadCoded
 from simplenc import BinaryCoder
 from enum import Enum, auto
 from constants import *
@@ -18,7 +19,7 @@ SEP = "\x1f"
 
 DEBUG = False
 
-reads = {}
+reads: dict[str, ReadCoded] = {}
 
 
 class Command(Enum):
@@ -110,7 +111,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 			output = f"{Command.LIST.value}:{path}\n".encode()
 		case Command.READ:
 			length = kwargs["length"]
-			reads[str(path)] = bytearray(length)
+			reads[str(path)] = ReadCoded(bytearray(length))
 			output = Command.READ.value.to_bytes(1, "big") + f"{SEP}{path}{SEP}{payload}{SEP}{length}\n".encode()
 		case Command.STATS:
 			output = f"{Command.STATS.value}:{path}\n".encode()
@@ -305,12 +306,12 @@ def read(path: str, start: int, length: int) -> bytes:
 	if str(path) not in reads:
 		return bytes()
 	timeout = 10
-	while type(reads[str(path)]) == bytearray:
+	while (reads[str(path)].decoder == None and type(reads[str(path)].data) == bytearray) or not reads[str(path)].decoder.is_fully_decoded():
 		sleep(0.001)
 		timeout -= 0.001
 		if timeout < 0:
 			return bytes()
-	data = bytes(reads[str(path)])
+	data = bytes(reads[str(path)].data)
 	del reads[str(path)]
 	return data
 

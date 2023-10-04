@@ -255,7 +255,7 @@ class AdarDataHandler():
             case storage_sync.Command.DATA:
                 """Received data, presumably linked to a read request"""
                 print("UDP", peer.friendly_name, f"data from a read: {path} ({start}->{start+length})", plaintext)
-                storage_sync.reads[path] = plaintext
+                storage_sync.reads[path].data = plaintext
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
                 print("UDP", peer.friendly_name, f"data to write: {path} ({start}->{start+length})", plaintext)
