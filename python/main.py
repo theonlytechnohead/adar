@@ -167,7 +167,7 @@ class AdarDataHandler():
         except OSError:
             return
         # check if message end is received
-        # TODO: maybe fetch more data / packets until end is recieved?
+        # TODO: must fetch more data / packets until fully decoded!
         # though there may need to be additional checks to ensure that data isn't garbage along the way
         if message[-1].to_bytes(1, "big") != b"\n":
             # error, invalid message!
@@ -233,6 +233,7 @@ class AdarDataHandler():
                 coefficient = int.from_bytes(coefficient, "big")
                 coefficients.append(coefficient)
             # decoding
+            # TODO: update this to be properly efficient
             decoder = BinaryCoder(payload_length, 8, 1)
             for coefficient, byte in zip(coefficients, data):
                 coefficient = [coefficient >> i & 1 for i in range(payload_length - 1, -1, -1)]

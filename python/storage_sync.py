@@ -179,6 +179,7 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	payload_length = len(ciphertextx)
 	coefficient_bytes = math.ceil(payload_length / 8)
 	# encoding
+	# TODO: update this to be properly efficient!
 	encoder = BinaryCoder(payload_length, 8, 1)
 	decoder = BinaryCoder(payload_length, 8, 1)
 	for i, byte in enumerate(ciphertextx):
