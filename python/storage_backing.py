@@ -154,6 +154,7 @@ def rename(path: str, new_path: str):
 
 
 def write(path: str, start: int, length: int, data: bytes, **kwargs):
+	# TODO only write *some* "equations" using 'network' coding
 	if os.name == "posix":
 		if "handle" in kwargs.keys():
 			handle = kwargs["handle"]
