@@ -120,9 +120,12 @@ def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 			symbol = [symbol >> i & 1 for i in range(8 - 1, -1, -1)]
 			print(coefficient, symbol)
 			decoder.consume_packet(coefficient, symbol)
+		print(f"decoded {decoder.get_num_decoded()} out of {length}")
 		for i in range(length):
 			if decoder.is_symbol_decoded(i):
-				output[i:i+1] = decoder.get_decoded_symbol(i)
+				symbol = decoder.get_decoded_symbol(i)
+				print(symbol)
+				output[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
 		return bytes(output)
 
 

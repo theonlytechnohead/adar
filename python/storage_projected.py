@@ -3,7 +3,6 @@ import os
 import shutil
 import sys
 
-import fec
 try:
     import ProjectedFS
 except FileNotFoundError:
@@ -80,10 +79,6 @@ def get_filesize(filename, info) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
     return info
 
 
-def read_file(path, offset: int, length: int) -> bytes:
-    return storage_backing.read_file(path, offset, length)
-
-
 @ProjectedFS.PRJ_GET_DIRECTORY_ENUMERATION_CB
 def get_directory_enumeration(callbackData, enumerationId, searchExpression, dirEntryBufferHandle):
     try:
@@ -145,7 +140,7 @@ def get_file_data(callbackData, byteOffset, length):
         fileInfo = get_filesize(callbackData.contents.FilePathName, fileInfo)
         if length > fileInfo.FileSize:
             return E_INVALIDARG
-        contents = read_file(
+        contents = storage_backing.read_file(
             callbackData.contents.FilePathName, byteOffset, length)
         # TODO: actually use this data
         network_contents = storage_sync.read(callbackData.contents.FilePathName, byteOffset, length)
