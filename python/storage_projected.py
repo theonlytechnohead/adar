@@ -17,6 +17,7 @@ import storage_sync
 import storage_backing
 from constants import *
 from peer import *
+from storage_metadata import *
 
 DEBUG = False
 
@@ -59,26 +60,23 @@ def end_directory_enumeration(callbackData, enumerationId):
         pass
 
 
-def get_fileinfo(path) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
+def get_fileinfo(path: str) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
     fileInfo = ProjectedFS.PRJ_FILE_BASIC_INFO()
-    stats = os.stat(path)
-    fileInfo.CreationTime = timestamp_to_filetime(stats.st_ctime)
-    fileInfo.LastAccessTime = timestamp_to_filetime(stats.st_atime)
-    fileInfo.LastWriteTime = timestamp_to_filetime(stats.st_mtime)
-    fileInfo.ChangeTime = timestamp_to_filetime(stats.st_mtime)
-    fileInfo.FileAttributes = stats.st_file_attributes
-    if not os.path.isfile(path):
+    if os.path.isfile(path):
+        metadata = load_metadata(path.removeprefix(f"{ROOT_POINTS[0]}\\"))
+        fileInfo.CreationTime = timestamp_to_filetime(from_ns(metadata.ctime_ns))
+        fileInfo.LastWriteTime = timestamp_to_filetime(from_ns(metadata.mtime_ns))
+        fileInfo.LastAccessTime = timestamp_to_filetime(from_ns(metadata.atime_ns))
+        fileInfo.ChangeTime = timestamp_to_filetime(from_ns(metadata.mtime_ns))
+        # fileInfo.FileAttributes = stats.st_file_attributes
+    else:
         fileInfo.IsDirectory = True
     return fileInfo
 
 
 def get_filesize(filename, info) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
-    total_size = 0
-    for root in ROOT_POINTS:
-        path = os.path.join(root, filename)
-        stats = os.stat(path)
-        total_size += stats.st_size
-    info.FileSize = total_size
+    metadata = load_metadata(filename)
+    info.FileSize = metadata.length
     return info
 
 
@@ -91,8 +89,7 @@ def get_directory_enumeration(callbackData, enumerationId, searchExpression, dir
     try:
         if (("COMPLETED" not in sessions[enumerationId.contents]) or (callbackData.contents.Flags & ProjectedFS.PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN)):
             # TODO: searchExpression + wildcard support
-            path = os.path.join(
-                ROOT_POINTS[0], callbackData.contents.FilePathName)
+            path = os.path.join(ROOT_POINTS[0], callbackData.contents.FilePathName)
             if DEBUG:
                 print(
                     f"Getting directory enumeration: {callbackData.contents.FilePathName}")
@@ -254,6 +251,7 @@ def create():
     for root in ROOT_POINTS:
         ensure(root)
     
+    ensure(METADATA_DIRECTORY)
     ensure(COEFFICIENT_DIRECTORY)
     ensure(SYMBOL_DIRECTORY)
     ensure(MOUNT_POINT)

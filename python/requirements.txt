@@ -1,6 +1,7 @@
 comtypes; os_name == "nt"
 fusepy; os_name == "posix"
 ipaddress
+jsons
 netifaces
 pycryptodome
 py-diffie-hellman

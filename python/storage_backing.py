@@ -2,10 +2,10 @@ import os
 import shutil
 from win32_setctime import setctime
 
-import fec
 from simplenc import BinaryCoder
 
 from constants import *
+from storage_metadata import *
 
 def ls(path: str):
 	if os.name == "posix":
@@ -33,13 +33,8 @@ def stats(path: str):
 		# TODO: use separate storage to get ctime
 		return stats.st_size, stats.st_ctime_ns, stats.st_mtime_ns, stats.st_atime_ns
 	if os.name == "nt":
-		total_size = 0
-		for root in ROOT_POINTS:
-			root_path = os.path.join(root, path)
-			stats = os.stat(root_path)
-			total_size += stats.st_size
-		return total_size, stats.st_ctime_ns, stats.st_mtime_ns, stats.st_atime_ns
-		# TODO: retrieve from metadata file
+		metadata = load_metadata(path)
+		return metadata.length, metadata.ctime_ns, metadata.mtime_ns, metadata.atime_ns
 
 
 def time(path: str, ctime: int, mtime: int, atime: int):
@@ -87,7 +82,10 @@ def create(path: str, directory: bool, **kwargs):
 				os.mkdir(root_path)
 			else:
 				open(root_path, "x").close()
-		# TODO create metadata file
+		if not directory:
+			load_metadata(path)
+		else:
+			os.mkdir(os.path.join(METADATA_DIRECTORY, path))
 
 
 def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
@@ -106,6 +104,8 @@ def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 				output = file.read(length)
 			return output
 	if os.name == "nt":
+		metadata = load_metadata(path)
+		metadata.update_atime()
 		output = bytearray(length)
 		decoder = BinaryCoder(length, 8, 1)
 		with open(os.path.join(COEFFICIENT_DIRECTORY, path), "rb") as file:
@@ -116,40 +116,14 @@ def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 		symbols = list(symbols)
 		print(coefficients, symbols)
 		for coefficient, symbol in zip(coefficients, symbols):
-			coefficient = [coefficient >> i & 1 for i in range(8 - 1, -1, -1)]
+			coefficient = [coefficient >> i & 1 for i in range(8 - 1, -1, -1)][length:]
 			symbol = [symbol >> i & 1 for i in range(8 - 1, -1, -1)]
+			print(coefficient, symbol)
 			decoder.consume_packet(coefficient, symbol)
-		print(f"decoded {decoder.get_num_decoded()} out of {length}")
 		for i in range(length):
 			if decoder.is_symbol_decoded(i):
 				output[i:i+1] = decoder.get_decoded_symbol(i)
 		return bytes(output)
-		read = 0
-		files = []
-		for root in ROOT_POINTS:
-			root_path = os.path.join(root, path)
-			files.append(open(root_path, "rb"))
-		for index, file in enumerate(files):
-			file_offset = start // len(ROOT_POINTS)
-			other_offset = start % len(ROOT_POINTS)
-			if other_offset == index:
-				file_offset += other_offset
-			file.seek(file_offset)
-		while read < length:
-			block1 = files[0].read(1)
-			block2 = files[1].read(1)
-			if block2 == b"":
-				block2 = b"\x00"
-			decoded1, decoded2 = fec.decode(block1, block2)
-			output[read:read + 1] = decoded1
-			read += 1
-			if block2 != b"":
-				output[read:read + 1] = decoded2
-				read += 1
-		for file in files:
-			file.close()
-		return bytes(output)[start:length]
-		# TODO: use metadata file
 
 
 def rename(path: str, new_path: str):
@@ -168,11 +142,17 @@ def rename(path: str, new_path: str):
 			except FileExistsError:
 				# something went wrong, it's probably not our fault though - ignore
 				return
-		# TODO: update metadata file
+		try:
+			os.rename(os.path.join(METADATA_DIRECTORY, path), os.path.join(METADATA_DIRECTORY, new_path))
+			os.rename(os.path.join(COEFFICIENT_DIRECTORY, path), os.path.join(COEFFICIENT_DIRECTORY, new_path))
+			os.rename(os.path.join(SYMBOL_DIRECTORY, path), os.path.join(SYMBOL_DIRECTORY, new_path))
+		except:
+			pass  # it's probably a directory
 
 
 def write(path: str, start: int, length: int, data: bytes, **kwargs):
 	if os.name == "posix":
+		# TODO: implement network coding
 		if "handle" in kwargs.keys():
 			handle = kwargs["handle"]
 			os.lseek(handle, start, os.SEEK_SET)
@@ -184,6 +164,11 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 			with open(path, "wb") as file:
 				file.write(data)
 	if os.name == "nt":
+		metadata = load_metadata(path)
+		metadata.length = length
+		metadata.update_mtime()
+		metadata.update_atime()
+		# TODO: ensure that overall length of symbols fits under 256?
 		encoder = BinaryCoder(length, 8, 1)
 		for i in range(length):
 			coefficients = [0] * length
@@ -192,18 +177,32 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 			encoder.consume_packet(coefficients, [byte >> i & 1 for i in range(8 - 1, -1, -1)])
 		coefficients = []
 		symbols = []
-		for _ in range(length):
+		for _ in range(length * 2):
 			coefficient, symbol = encoder.get_new_coded_packet()
 			coefficient = int("".join(map(str, coefficient)), 2)
 			symbol = int("".join(map(str, symbol)), 2)
 			coefficients.append(coefficient)
 			symbols.append(symbol)
+		# TODO: this errors out for longer files
 		coefficients = bytes(coefficients)
 		symbols = bytes(symbols)
 		with open(os.path.join(COEFFICIENT_DIRECTORY, path), "wb") as file:
 			file.write(coefficients)
 		with open(os.path.join(SYMBOL_DIRECTORY, path), "wb") as file:
 			file.write(symbols)
+		write_metadata(path, metadata)
+
+
+def remove_path(path: str):
+	if os.name == "posix":
+		# TODO
+		pass
+	if os.name == "nt":
+		if os.path.exists(path):
+			if os.path.isdir(path):
+				shutil.rmtree(path)
+			else:
+				os.remove(path)
 
 
 def remove(path: str):
@@ -219,9 +218,8 @@ def remove(path: str):
 		# TODO: figure out why directories are sticky (sometimes?)
 		for root in ROOT_POINTS:
 			root_path = os.path.join(root, path)
-			if os.path.exists(root_path):
-				if os.path.isdir(root_path):
-					shutil.rmtree(root_path)
-				else:
-					os.remove(root_path)
-		# TODO: remove metadata file
+			remove_path(root_path)
+		remove_path(os.path.join(METADATA_DIRECTORY, path))
+		remove_path(os.path.join(COEFFICIENT_DIRECTORY, path))
+		remove_path(os.path.join(SYMBOL_DIRECTORY, path))
+		
