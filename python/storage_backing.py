@@ -3,6 +3,7 @@ import shutil
 from win32_setctime import setctime
 
 import fec
+from simplenc import BinaryCoder
 
 from constants import *
 
@@ -167,6 +168,27 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 			with open(path, "wb") as file:
 				file.write(data)
 	if os.name == "nt":
+		encoder = BinaryCoder(length, 8, 1)
+		for i in range(length):
+			coefficients = [0] * length
+			coefficients[i] = 1
+			byte = data[i]
+			encoder.consume_packet(coefficients, [byte >> i & 1 for i in range(8 - 1, -1, -1)])
+		coefficients = []
+		symbols = []
+		for n in range(length):
+			coefficient, symbol = encoder.get_new_coded_packet()
+			coefficient = int("".join(map(str, coefficient)), 2)
+			symbol = int("".join(map(str, symbol)), 2)
+			coefficients.append(coefficient)
+			symbols.append(symbol)
+		coefficients = bytes(coefficients)
+		symbols = bytes(symbols)
+		with open(os.path.join(COEFFICIENT_DIRECTORY, path), "wb") as file:
+			file.write(coefficients)
+		with open(os.path.join(SYMBOL_DIRECTORY, path), "wb") as file:
+			file.write(symbols)
+		return
 		# TODO: is this really necessary? it seems to help by fixing the file size and doing placeholdery stuff that hints the OS what's happened
 		real_path = kwargs["real_path"]
 		try:
