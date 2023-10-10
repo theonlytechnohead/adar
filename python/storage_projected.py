@@ -83,34 +83,7 @@ def get_filesize(filename, info) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
 
 
 def read_file(path, offset: int, length: int) -> bytes:
-    output = bytearray(length)
-    read = 0
-    files = []
-    for root in ROOT_POINTS:
-        root_path = os.path.join(root, path)
-        files.append(open(root_path, "rb"))
-    for index, file in enumerate(files):
-        file_offset = offset // len(ROOT_POINTS)
-        other_offset = offset % len(ROOT_POINTS)
-        if other_offset == index:
-            file_offset += other_offset
-        if DEBUG:
-            print(f"skipping {file_offset} bytes for root {index}")
-        file.seek(file_offset)
-    while read < length:
-        block1 = files[0].read(1)
-        block2 = files[1].read(1)
-        if block2 == b"":
-            block2 = b"\x00"
-        decoded1, decoded2 = fec.decode(block1, block2)
-        output[read:read + 1] = decoded1
-        read += 1
-        if block2 != b"":
-            output[read:read + 1] = decoded2
-            read += 1
-    for file in files:
-        file.close()
-    return bytes(output)
+    return storage_backing.read_file(path, offset, length)
 
 
 @ProjectedFS.PRJ_GET_DIRECTORY_ENUMERATION_CB

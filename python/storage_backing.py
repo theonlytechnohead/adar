@@ -107,6 +107,23 @@ def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 			return output
 	if os.name == "nt":
 		output = bytearray(length)
+		decoder = BinaryCoder(length, 8, 1)
+		with open(os.path.join(COEFFICIENT_DIRECTORY, path), "rb") as file:
+			coefficients = file.read()
+		with open(os.path.join(SYMBOL_DIRECTORY, path), "rb") as file:
+			symbols = file.read()
+		coefficients = list(coefficients)
+		symbols = list(symbols)
+		print(coefficients, symbols)
+		for coefficient, symbol in zip(coefficients, symbols):
+			coefficient = [coefficient >> i & 1 for i in range(8 - 1, -1, -1)]
+			symbol = [symbol >> i & 1 for i in range(8 - 1, -1, -1)]
+			decoder.consume_packet(coefficient, symbol)
+		print(f"decoded {decoder.get_num_decoded()} out of {length}")
+		for i in range(length):
+			if decoder.is_symbol_decoded(i):
+				output[i:i+1] = decoder.get_decoded_symbol(i)
+		return bytes(output)
 		read = 0
 		files = []
 		for root in ROOT_POINTS:
@@ -155,7 +172,6 @@ def rename(path: str, new_path: str):
 
 
 def write(path: str, start: int, length: int, data: bytes, **kwargs):
-	# TODO only write *some* "equations" using 'network' coding
 	if os.name == "posix":
 		if "handle" in kwargs.keys():
 			handle = kwargs["handle"]
@@ -176,7 +192,7 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 			encoder.consume_packet(coefficients, [byte >> i & 1 for i in range(8 - 1, -1, -1)])
 		coefficients = []
 		symbols = []
-		for n in range(length):
+		for _ in range(length):
 			coefficient, symbol = encoder.get_new_coded_packet()
 			coefficient = int("".join(map(str, coefficient)), 2)
 			symbol = int("".join(map(str, symbol)), 2)
@@ -188,37 +204,6 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 			file.write(coefficients)
 		with open(os.path.join(SYMBOL_DIRECTORY, path), "wb") as file:
 			file.write(symbols)
-		return
-		# TODO: is this really necessary? it seems to help by fixing the file size and doing placeholdery stuff that hints the OS what's happened
-		real_path = kwargs["real_path"]
-		try:
-			with open(real_path, "wb") as file:
-				file.seek(start)
-				file.write(data)
-		except PermissionError:
-			# we aren't allowed to read this file (yet?), just ignore it
-			return
-		written = 0
-		files = []
-		# TODO: use DATA_DIRECTORY with blocks and transmit over network
-		for root in ROOT_POINTS:
-			root_path = os.path.join(root, path)
-			file = open(root_path, "wb")
-			file.seek(start // 2)
-			files.append(file)
-		while written < length:
-			byte1 = data[written:written+1]
-			written += 1
-			byte2 = data[written:written+1] if written < length else b""
-			written += 1
-			if byte2 == b"":
-				byte2 = b"\x00"
-			block1, block2 = fec.encode(byte1, byte2)
-			files[0].write(block1)
-			if byte2 != b"\x00":
-				files[1].write(block2)
-		for file in files:
-			file.close()
 
 
 def remove(path: str):
