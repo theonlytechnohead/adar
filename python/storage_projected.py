@@ -268,28 +268,22 @@ instanceId.Data2 = 0xBAAD
 instanceId.Data3 = 0xCAA7
 
 
+def ensure(directory: str):
+    if not os.path.exists(directory):
+        if DEBUG: print(f"{directory} does not exist yet, creating...")
+        os.mkdir(directory)
+    if not os.path.isdir(directory):
+        if DEBUG: print(f"{directory} is not a directory, exiting...")
+        sys.exit(1)
+
+
 def create():
     for root in ROOT_POINTS:
-        # check existance
-        if not os.path.exists(root):
-            if DEBUG:
-                print(f"{root} does not exist yet, creating...")
-            os.mkdir(root)
-        # check directory
-        if not os.path.isdir(root):
-            if DEBUG:
-                print(f"{root} is not a directory, exiting...")
-            sys.exit(1)
-    # only one mount point
-    if not os.path.exists(MOUNT_POINT):
-        if DEBUG:
-            print(f"{MOUNT_POINT} does not exist yet, creating...")
-        os.mkdir(MOUNT_POINT)
-
-    if not os.path.isdir(MOUNT_POINT):
-        if DEBUG:
-            print(f"{MOUNT_POINT} is not a directory, exiting...")
-        sys.exit(1)
+        ensure(root)
+    
+    ensure(COEFFICIENT_DIRECTORY)
+    ensure(SYMBOL_DIRECTORY)
+    ensure(MOUNT_POINT)
 
     if ProjectedFS.PrjMarkDirectoryAsPlaceholder(os.path.abspath(MOUNT_POINT), None, None, instanceId) != S_OK:
         if DEBUG:
