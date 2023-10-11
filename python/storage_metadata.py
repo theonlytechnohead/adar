@@ -16,6 +16,9 @@ class Metadata:
 	mtime_ns: int = time.time_ns()
 	atime_ns: int = time.time_ns()
 
+	def __init__(self) -> None:
+		self.seed = random.randint(0, sys.maxsize)
+
 	def update_ctime(self, ctime_ns: int = None):
 		if ctime_ns:
 			self.ctime_ns = ctime_ns
