@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 import os
 import json
+import random
+import sys
 import jsons
 import time
 
@@ -9,6 +11,7 @@ from constants import *
 @dataclass
 class Metadata:
 	length: int = 0
+	seed: int = random.randint(0, sys.maxsize)
 	ctime_ns: int = time.time_ns()
 	mtime_ns: int = time.time_ns()
 	atime_ns: int = time.time_ns()

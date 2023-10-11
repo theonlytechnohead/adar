@@ -108,13 +108,10 @@ def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 		metadata = load_metadata(path)
 		metadata.update_atime()
 		output = bytearray(length)
-		with open(os.path.join(COEFFICIENT_DIRECTORY, path), "rb") as file:
-			seed = file.read()
 		with open(os.path.join(SYMBOL_DIRECTORY, path), "rb") as file:
 			symbols = file.read()
-		seed = int.from_bytes(seed, "big")
 		symbols = list(symbols)
-		decoder = BinaryCoder(length, 8, seed)
+		decoder = BinaryCoder(length, 8, metadata.seed)
 		for symbol in symbols:
 			coefficient, _ = decoder.generate_coefficients()
 			symbol = [symbol >> i & 1 for i in range(8 - 1, -1, -1)]
@@ -168,8 +165,7 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 		metadata.length = length
 		metadata.update_mtime()
 		metadata.update_atime()
-		seed = random.randint(0, 65535)
-		encoder = BinaryCoder(length, 8, seed)
+		encoder = BinaryCoder(length, 8, metadata.seed)
 		for i in range(length):
 			coefficients = [0] * length
 			coefficients[i] = 1
@@ -180,10 +176,7 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 			symbol = encoder.get_generated_coded_packet()
 			symbol = int("".join(map(str, symbol)), 2)
 			symbols.append(symbol)
-		seed = seed.to_bytes(2, "big")
 		symbols = bytes(symbols)
-		with open(os.path.join(COEFFICIENT_DIRECTORY, path), "wb") as file:
-			file.write(seed)
 		with open(os.path.join(SYMBOL_DIRECTORY, path), "wb") as file:
 			file.write(symbols)
 		write_metadata(path, metadata)
