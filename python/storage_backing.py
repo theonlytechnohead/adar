@@ -52,6 +52,7 @@ def time(path: str, ctime: int, mtime: int, atime: int):
 		metadata.ctime_ns = ctime
 		metadata.mtime_ns = mtime
 		metadata.atime_ns = atime
+		write_metadata(metadata)
 		mount_path = os.path.join(MOUNT_POINT, path)
 		os.utime(mount_path, times=None, ns=(atime, mtime))
 		ctime = ctime / 1_000_000_000  # convert ns to s
