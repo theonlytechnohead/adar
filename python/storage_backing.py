@@ -141,7 +141,6 @@ def rename(path: str, new_path: str):
 				return
 		try:
 			os.rename(os.path.join(METADATA_DIRECTORY, path), os.path.join(METADATA_DIRECTORY, new_path))
-			os.rename(os.path.join(COEFFICIENT_DIRECTORY, path), os.path.join(COEFFICIENT_DIRECTORY, new_path))
 			os.rename(os.path.join(SYMBOL_DIRECTORY, path), os.path.join(SYMBOL_DIRECTORY, new_path))
 		except:
 			pass  # it's probably a directory
@@ -209,6 +208,5 @@ def remove(path: str):
 			root_path = os.path.join(root, path)
 			remove_path(root_path)
 		remove_path(os.path.join(METADATA_DIRECTORY, path))
-		remove_path(os.path.join(COEFFICIENT_DIRECTORY, path))
 		remove_path(os.path.join(SYMBOL_DIRECTORY, path))
 		

@@ -247,7 +247,6 @@ def create():
         ensure(root)
     
     ensure(METADATA_DIRECTORY)
-    ensure(COEFFICIENT_DIRECTORY)
     ensure(SYMBOL_DIRECTORY)
     ensure(MOUNT_POINT)
 
