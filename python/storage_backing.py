@@ -1,4 +1,5 @@
 import os
+import random
 import shutil
 from win32_setctime import setctime
 
@@ -167,7 +168,7 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 		metadata.length = length
 		metadata.update_mtime()
 		metadata.update_atime()
-		seed = 1
+		seed = random.randint(0, 65535)
 		encoder = BinaryCoder(length, 8, seed)
 		for i in range(length):
 			coefficients = [0] * length
