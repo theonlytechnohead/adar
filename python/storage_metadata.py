@@ -19,23 +19,14 @@ class Metadata:
 	def __init__(self) -> None:
 		self.seed = random.randint(0, sys.maxsize)
 
-	def update_ctime(self, ctime_ns: int = None):
-		if ctime_ns:
-			self.ctime_ns = ctime_ns
-		else:
-			self.ctime_ns = time.time_ns()
+	def update_ctime(self):
+		self.ctime_ns = time.time_ns()
 
-	def update_mtime(self, mtime_ns: int = None):
-		if mtime_ns:
-			self.mtime_ns = mtime_ns
-		else:
-			self.mtime_ns = time.time_ns()
+	def update_mtime(self):
+		self.mtime_ns = time.time_ns()
 
-	def update_atime(self, atime_ns: int = None):
-		if atime_ns:
-			self.atime_ns = atime_ns
-		else:
-			self.atime_ns = time.time_ns()
+	def update_atime(self):
+		self.atime_ns = time.time_ns()
 
 
 def load_metadata(path: str) -> Metadata:
