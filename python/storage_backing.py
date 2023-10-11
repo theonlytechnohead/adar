@@ -18,7 +18,7 @@ def ls(path: str):
 		folders = [f for f in listing if os.path.isdir(os.path.join(path, f))]
 		return folders, files
 	if os.name == "nt":
-		root_path = os.path.join(ROOT_POINTS[0], path)
+		root_path = os.path.join(METADATA_DIRECTORY, path)
 		listing = os.listdir(root_path)
 		files = [f for f in listing if os.path.isfile(os.path.join(root_path, f))]
 		folders = [f for f in listing if os.path.isdir(os.path.join(root_path, f))]
@@ -49,10 +49,10 @@ def time(path: str, ctime: int, mtime: int, atime: int):
 		os.utime(mount_path, times=None, ns=(atime, mtime))
 	if os.name == "nt":
 		ctime = ctime / 1_000_000_000  # convert ns to s
-		for root in ROOT_POINTS:
-			root_path = os.path.join(root, path)
-			os.utime(root_path, times=None, ns=(atime, mtime))
-			setctime(root_path, ctime)
+		# for root in ROOT_POINTS:
+		# 	root_path = os.path.join(root, path)
+		# 	os.utime(root_path, times=None, ns=(atime, mtime))
+		# 	setctime(root_path, ctime)
 		mount_path = os.path.join(MOUNT_POINT, path)
 		os.utime(mount_path, times=None, ns=(atime, mtime))
 		setctime(mount_path, ctime)
@@ -77,16 +77,12 @@ def create(path: str, directory: bool, **kwargs):
 			else:
 				return os.open(path, os.O_WRONLY | os.O_CREAT)
 	if os.name == "nt":
-		for root in ROOT_POINTS:
-			root_path = os.path.join(root, path)
-			if directory:
-				os.mkdir(root_path)
-			else:
-				open(root_path, "x").close()
-		if not directory:
-			load_metadata(path)
-		else:
+		if directory:
 			os.mkdir(os.path.join(METADATA_DIRECTORY, path))
+			os.mkdir(os.path.join(SYMBOL_DIRECTORY, path))
+		else:
+			load_metadata(path)
+
 
 
 def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
@@ -131,14 +127,6 @@ def rename(path: str, new_path: str):
 		new_path = ROOT_POINT + new_path
 		return os.rename(path, new_path)
 	if os.name == "nt":
-		for root in ROOT_POINTS:
-			root_path = os.path.join(root, path)
-			root_new_path = os.path.join(root, new_path)
-			try:
-				os.rename(root_path, root_new_path)
-			except FileExistsError:
-				# something went wrong, it's probably not our fault though - ignore
-				return
 		try:
 			os.rename(os.path.join(METADATA_DIRECTORY, path), os.path.join(METADATA_DIRECTORY, new_path))
 			os.rename(os.path.join(SYMBOL_DIRECTORY, path), os.path.join(SYMBOL_DIRECTORY, new_path))
@@ -204,9 +192,6 @@ def remove(path: str):
 			return os.unlink(path)
 	if os.name == "nt":
 		# TODO: figure out why directories are sticky (sometimes?)
-		for root in ROOT_POINTS:
-			root_path = os.path.join(root, path)
-			remove_path(root_path)
 		remove_path(os.path.join(METADATA_DIRECTORY, path))
 		remove_path(os.path.join(SYMBOL_DIRECTORY, path))
 		

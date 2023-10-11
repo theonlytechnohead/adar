@@ -10,4 +10,3 @@ MOUNT_POINT = "mount"  # for presenting to the OS / user
 ROOT_POINT = ".root"  # temporary
 SYMBOL_DIRECTORY = ".symbols"  # holds symbols
 METADATA_DIRECTORY = ".metadata"  # holds file metadata
-ROOT_POINTS = (ROOT_POINT + "0", ROOT_POINT + "1")  # temporary

@@ -61,8 +61,8 @@ def end_directory_enumeration(callbackData, enumerationId):
 
 def get_fileinfo(path: str) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
     fileInfo = ProjectedFS.PRJ_FILE_BASIC_INFO()
-    if os.path.isfile(path):
-        metadata = load_metadata(path.removeprefix(f"{ROOT_POINTS[0]}\\"))
+    if os.path.isfile(os.path.join(METADATA_DIRECTORY, path)):
+        metadata = load_metadata(path)
         fileInfo.CreationTime = timestamp_to_filetime(from_ns(metadata.ctime_ns))
         fileInfo.LastWriteTime = timestamp_to_filetime(from_ns(metadata.mtime_ns))
         fileInfo.LastAccessTime = timestamp_to_filetime(from_ns(metadata.atime_ns))
@@ -74,8 +74,9 @@ def get_fileinfo(path: str) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
 
 
 def get_filesize(filename, info) -> ProjectedFS.PRJ_FILE_BASIC_INFO:
-    metadata = load_metadata(filename)
-    info.FileSize = metadata.length
+    if os.path.isfile(os.path.join(METADATA_DIRECTORY, filename)):
+        metadata = load_metadata(filename)
+        info.FileSize = metadata.length
     return info
 
 
@@ -84,18 +85,21 @@ def get_directory_enumeration(callbackData, enumerationId, searchExpression, dir
     try:
         if (("COMPLETED" not in sessions[enumerationId.contents]) or (callbackData.contents.Flags & ProjectedFS.PRJ_CB_DATA_FLAG_ENUM_RESTART_SCAN)):
             # TODO: searchExpression + wildcard support
-            path = os.path.join(ROOT_POINTS[0], callbackData.contents.FilePathName)
+            path = callbackData.contents.FilePathName
+            full_path = os.path.join(METADATA_DIRECTORY, path)
             if DEBUG:
                 print(
                     f"Getting directory enumeration: {callbackData.contents.FilePathName}")
-            if os.path.exists(path):
-                if os.path.isdir(path):
-                    entries = [entry for entry in os.listdir(path)]
+            if os.path.exists(full_path):
+                if os.path.isdir(full_path):
+                    entries = [entry for entry in os.listdir(full_path)]
                 else:
                     entries = [entry]
                 for entry in entries:
-                    full_path = os.path.join(path, entry)
-                    fileInfo = get_fileinfo(full_path)
+                    if DEBUG:
+                        print(f"Getting placeholder info: {entry}")
+                    file_path = os.path.join(path, entry)
+                    fileInfo = get_fileinfo(file_path)
                     # TODO: PrjFileNameCompare to determine correct sort order
                     ProjectedFS.PrjFillDirEntryBuffer(
                         entry, fileInfo, dirEntryBufferHandle)
@@ -114,15 +118,19 @@ def get_placeholder_info(callbackData):
         print(
             f"Fetching placeholder info: {callbackData.contents.FilePathName}")
     path = callbackData.contents.FilePathName
-    full_path = os.path.join(ROOT_POINTS[0], path)
+    full_path = os.path.join(METADATA_DIRECTORY, path)
     if os.path.exists(full_path):
         placeholderInfo = ProjectedFS.PRJ_PLACEHOLDER_INFO()
-        info = get_fileinfo(full_path)
+        info = get_fileinfo(path)
         info = get_filesize(callbackData.contents.FilePathName, info)
         placeholderInfo.FileBasicInfo = info
         # TODO: size vs size on disk?
         ProjectedFS.PrjWritePlaceholderInfo(
-            callbackData.contents.NamespaceVirtualizationContext, path, placeholderInfo, ctypes.sizeof(placeholderInfo))
+            callbackData.contents.NamespaceVirtualizationContext,
+            path,
+            placeholderInfo,
+            ctypes.sizeof(placeholderInfo)
+            )
         return S_OK
     else:
         return ERROR_FILE_NOT_FOUND
@@ -134,23 +142,26 @@ def get_file_data(callbackData, byteOffset, length):
         print(
             f"Getting file data: {callbackData.contents.FilePathName} (+{byteOffset} for {length})")
     path = callbackData.contents.FilePathName
-    full_path = os.path.join(ROOT_POINTS[0], path)
+    full_path = os.path.join(METADATA_DIRECTORY, path)
     if os.path.exists(full_path):
-        fileInfo = get_fileinfo(full_path)
+        fileInfo = get_fileinfo(path)
         fileInfo = get_filesize(callbackData.contents.FilePathName, fileInfo)
         if length > fileInfo.FileSize:
             return E_INVALIDARG
-        contents = storage_backing.read_file(
-            callbackData.contents.FilePathName, byteOffset, length)
+        contents = storage_backing.read_file(callbackData.contents.FilePathName, byteOffset, length)
         # TODO: actually use this data
         network_contents = storage_sync.read(callbackData.contents.FilePathName, byteOffset, length)
-        writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(
-            callbackData.contents.NamespaceVirtualizationContext, length)
+        writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(callbackData.contents.NamespaceVirtualizationContext, length)
         if not writeBuffer:
             return E_OUTOFMEMORY
         ctypes.memmove(ctypes.c_void_p(writeBuffer), contents, length)
-        ProjectedFS.PrjWriteFileData(callbackData.contents.NamespaceVirtualizationContext,
-                                     callbackData.contents.DataStreamId, writeBuffer, byteOffset, length)
+        ProjectedFS.PrjWriteFileData(
+            callbackData.contents.NamespaceVirtualizationContext,
+            callbackData.contents.DataStreamId,
+            writeBuffer,
+            byteOffset,
+            length
+            )
         ProjectedFS.PrjFreeAlignedBuffer(writeBuffer)
         return S_OK
     else:
@@ -243,9 +254,6 @@ def ensure(directory: str):
 
 
 def create():
-    for root in ROOT_POINTS:
-        ensure(root)
-    
     ensure(METADATA_DIRECTORY)
     ensure(SYMBOL_DIRECTORY)
     ensure(MOUNT_POINT)
