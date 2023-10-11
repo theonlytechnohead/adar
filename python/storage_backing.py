@@ -48,15 +48,14 @@ def time(path: str, ctime: int, mtime: int, atime: int):
 		mount_path = MOUNT_POINT + path
 		os.utime(mount_path, times=None, ns=(atime, mtime))
 	if os.name == "nt":
-		ctime = ctime / 1_000_000_000  # convert ns to s
-		# for root in ROOT_POINTS:
-		# 	root_path = os.path.join(root, path)
-		# 	os.utime(root_path, times=None, ns=(atime, mtime))
-		# 	setctime(root_path, ctime)
+		metadata = load_metadata(path)
+		metadata.ctime_ns = ctime
+		metadata.mtime_ns = mtime
+		metadata.atime_ns = atime
 		mount_path = os.path.join(MOUNT_POINT, path)
 		os.utime(mount_path, times=None, ns=(atime, mtime))
+		ctime = ctime / 1_000_000_000  # convert ns to s
 		setctime(mount_path, ctime)
-		# TODO: update metadata file
 
 
 def create(path: str, directory: bool, **kwargs):
