@@ -95,3 +95,27 @@ class BinaryCoder(object):
             packet[l] = sum([self.packet_vector[selected][l] for selected in random_decisions])%2
 
         return coefficients, packet
+    
+    def get_generated_coded_packet(self):
+        packet = [0] * self.num_bit_packet
+        
+        _, random_decisions = self.generate_coefficients()
+        
+        # add selected rows' payloads to packet
+        for l in range(self.num_bit_packet):
+            packet[l] = sum([self.packet_vector[selected][l] for selected in random_decisions])%2
+
+        return packet
+    
+    def generate_coefficients(self):
+        seed = self.random.randint(0, 65535)
+        rng = random.Random()
+        rng.seed(seed)
+        coefficients = [0] * self.num_symbols
+
+        while sum(coefficients) == 0:
+            n = rng.randint(0, self.num_symbols)
+            chosen = rng.choices(range(self.num_symbols), k=n)
+            generated_coefficients = [[0 if i != index else 1 for i in range(self.num_symbols)] for index in chosen]
+            coefficients = [sum(x) % 2 for x in zip(*generated_coefficients)]
+        return coefficients, chosen

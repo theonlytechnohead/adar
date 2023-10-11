@@ -107,24 +107,20 @@ def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 		metadata = load_metadata(path)
 		metadata.update_atime()
 		output = bytearray(length)
-		decoder = BinaryCoder(length, 8, 1)
 		with open(os.path.join(COEFFICIENT_DIRECTORY, path), "rb") as file:
-			coefficients = file.read()
+			seed = file.read()
 		with open(os.path.join(SYMBOL_DIRECTORY, path), "rb") as file:
 			symbols = file.read()
-		coefficients = list(coefficients)
+		seed = int.from_bytes(seed, "big")
 		symbols = list(symbols)
-		print(coefficients, symbols)
-		for coefficient, symbol in zip(coefficients, symbols):
-			coefficient = [coefficient >> i & 1 for i in range(8 - 1, -1, -1)][length:]
+		decoder = BinaryCoder(length, 8, seed)
+		for symbol in symbols:
+			coefficient, _ = decoder.generate_coefficients()
 			symbol = [symbol >> i & 1 for i in range(8 - 1, -1, -1)]
-			print(coefficient, symbol)
 			decoder.consume_packet(coefficient, symbol)
-		print(f"decoded {decoder.get_num_decoded()} out of {length}")
 		for i in range(length):
 			if decoder.is_symbol_decoded(i):
 				symbol = decoder.get_decoded_symbol(i)
-				print(symbol)
 				output[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
 		return bytes(output)
 
@@ -171,26 +167,22 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 		metadata.length = length
 		metadata.update_mtime()
 		metadata.update_atime()
-		# TODO: ensure that overall length of symbols fits under 256?
-		encoder = BinaryCoder(length, 8, 1)
+		seed = 1
+		encoder = BinaryCoder(length, 8, seed)
 		for i in range(length):
 			coefficients = [0] * length
 			coefficients[i] = 1
 			byte = data[i]
 			encoder.consume_packet(coefficients, [byte >> i & 1 for i in range(8 - 1, -1, -1)])
-		coefficients = []
 		symbols = []
 		for _ in range(length * 2):
-			coefficient, symbol = encoder.get_new_coded_packet()
-			coefficient = int("".join(map(str, coefficient)), 2)
+			symbol = encoder.get_generated_coded_packet()
 			symbol = int("".join(map(str, symbol)), 2)
-			coefficients.append(coefficient)
 			symbols.append(symbol)
-		# TODO: this errors out for longer files
-		coefficients = bytes(coefficients)
+		seed = seed.to_bytes(2, "big")
 		symbols = bytes(symbols)
 		with open(os.path.join(COEFFICIENT_DIRECTORY, path), "wb") as file:
-			file.write(coefficients)
+			file.write(seed)
 		with open(os.path.join(SYMBOL_DIRECTORY, path), "wb") as file:
 			file.write(symbols)
 		write_metadata(path, metadata)
