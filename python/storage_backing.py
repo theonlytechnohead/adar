@@ -55,8 +55,7 @@ def time(path: str, ctime: int, mtime: int, atime: int):
 		write_metadata(metadata)
 		mount_path = os.path.join(MOUNT_POINT, path)
 		os.utime(mount_path, times=None, ns=(atime, mtime))
-		ctime = ctime / 1_000_000_000  # convert ns to s
-		setctime(mount_path, ctime)
+		setctime(mount_path, from_ns(ctime))
 
 
 def create(path: str, directory: bool, **kwargs):
@@ -103,6 +102,7 @@ def read_file(path: str, start: int, length: int, **kwargs) -> bytes:
 	if os.name == "nt":
 		metadata = load_metadata(path)
 		metadata.update_atime()
+		write_metadata(metadata)
 		output = bytearray(length)
 		with open(os.path.join(SYMBOL_DIRECTORY, path), "rb") as file:
 			symbols = file.read()
