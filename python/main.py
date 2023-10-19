@@ -206,9 +206,7 @@ class AdarDataHandler():
             """Recieved network-coded data, decode and decrypt"""
             path = header[1:].decode()
             i = 0
-            start = int.from_bytes(arguments[i:i+8], "big")
-            i += 8
-            length = int.from_bytes(arguments[i:i+8], "big")
+            seed = int.from_bytes(arguments[i:i+8], "big")
             i += 8
             payload_length = int.from_bytes(arguments[i:i+8], "big")
             i += 8
@@ -256,12 +254,12 @@ class AdarDataHandler():
                 storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, seed=seed, skip=skip)
             case storage_sync.Command.DATA:
                 """Received data, presumably linked to a read request"""
-                print("UDP", peer.friendly_name, f"data from a read: {path} ({start}->{start+length})", plaintext)
+                print("UDP", peer.friendly_name, f"data from a read: {path}", plaintext)
                 storage_sync.reads[path].data = plaintext
             case storage_sync.Command.WRITE:
                 """Received a write command, process network-coded data"""
-                print("UDP", peer.friendly_name, f"data to write: {path} ({start}->{start+length})", plaintext)
-                storage_sync.write_local(path, start, length, plaintext)
+                print("UDP", peer.friendly_name, f"data to write: {path}", plaintext)
+                storage_sync.write_local(path, 0, len(plaintext), plaintext)
     
     def shutdown(self):
         self.stop = True

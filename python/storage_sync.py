@@ -205,8 +205,7 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	output = command.value.to_bytes(1, "big")
 	output += str(path).encode()
 	output += SEP.encode()
-	output += start.to_bytes(8, "big")
-	output += length.to_bytes(8, "big")
+	output += seed.to_bytes(8, "big")
 	output += payload_length.to_bytes(8, "big")
 	output += cipher.nonce  # 24 bytes
 	output += len(cata).to_bytes(2, "big")
