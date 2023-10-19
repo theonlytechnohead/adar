@@ -171,8 +171,8 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 @thread
 def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | str, payload = None, **kwargs):
 	"""Send a file, e.g. a write command, with network-coding and transmit over UDP"""
-	start: int = kwargs["start"]
-	length: int = kwargs["length"]
+	seed: int = kwargs["seed"]
+	# TODO: transmit seed + equations
 	payload: bytes
 	# encryption, XChaCha20-Poly1305 https://pycryptodome.readthedocs.io/en/latest/src/cipher/chacha20_poly1305.html
 	cipher = ChaCha20_Poly1305.new(key=peer.shared_key[-32:], nonce=get_random_bytes(24))
@@ -181,7 +181,8 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	payload_length = len(ciphertextx)
 	coefficient_bytes = math.ceil(payload_length / 8)
 	# encoding
-	# TODO: update this to be properly efficient!
+	# TODO: split data into packet sizes
+	# TODO: divide data into n + 1 peer's worth of equations, distribute to n peers
 	encoder = BinaryCoder(payload_length, 8, 1)
 	decoder = BinaryCoder(payload_length, 8, 1)
 	for i, byte in enumerate(ciphertextx):
@@ -194,6 +195,7 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	data = bytearray()
 	while not decoder.is_fully_decoded():
 		coefficient, packet = encoder.get_new_coded_packet()
+		# TODO: use encoder.get_sys_coded_packet() instead
 		decoder.consume_packet(coefficient, packet)
 		coefficient = int("".join(map(str, coefficient)), 2)
 		coefficient = coefficient.to_bytes(coefficient_bytes, "big")
@@ -302,11 +304,12 @@ def read(path: str, start: int, length: int) -> bytes:
 	path = pton(path)
 	if DEBUG: print(f"reading {path} ({start}->{start+length})")
 	for peer in peer_list:
-		transmit(peer, Command.READ, path, start, length=length)
+		transmit(peer, Command.READ, path, None, skip=0, equations=length)
 	# TODO: switch to events rather than polling?
 	if str(path) not in reads:
 		return bytes()
 	timeout = 10
+	# TODO: keep requesting until decoded
 	while (reads[str(path)].decoder == None and type(reads[str(path)].data) == bytearray) or not reads[str(path)].decoder.is_fully_decoded():
 		sleep(0.001)
 		timeout -= 0.001
