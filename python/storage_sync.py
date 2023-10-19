@@ -110,9 +110,10 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case Command.LIST:
 			output = f"{Command.LIST.value}:{path}\n".encode()
 		case Command.READ:
-			length = kwargs["length"]
-			reads[str(path)] = ReadCoded(bytearray(length))
-			output = Command.READ.value.to_bytes(1, "big") + f"{SEP}{path}{SEP}{payload}{SEP}{length}\n".encode()
+			skip = kwargs["skip"]
+			equations = kwargs["equations"]
+			reads[str(path)] = ReadCoded()
+			output = Command.READ.value.to_bytes(1, "big") + f"{path}{SEP}{skip}{SEP}{equations}\n".encode()
 		case Command.STATS:
 			output = f"{Command.STATS.value}:{path}\n".encode()
 		case Command.REMOVE:
@@ -368,11 +369,11 @@ def create_local(path: str, directory: bool):
 	storage_backing.create(path, directory)
 
 
-def read_local(path: str, start: int, length: int) -> bytes:
+def read_local(path: str, skip: int, equations: int) -> bytes:
 	if os.name == "nt":
 		path = ntop(path, False)
-	if DEBUG: print(f"reading local {path} ({start}->{start+length})")
-	return storage_backing.read_file(path, start, length)
+	if DEBUG: print(f"reading local {path} ({equations} equations)")
+	return storage_backing.read_file(path, skip, equations)
 
 
 def rename_local(path: str, new_path: str):

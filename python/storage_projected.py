@@ -3,6 +3,8 @@ import os
 import shutil
 import sys
 
+from simplenc import BinaryCoder
+
 try:
     import ProjectedFS
 except FileNotFoundError:
@@ -148,7 +150,18 @@ def get_file_data(callbackData, byteOffset, length):
         fileInfo = get_filesize(callbackData.contents.FilePathName, fileInfo)
         if length > fileInfo.FileSize:
             return E_INVALIDARG
-        contents = storage_backing.read_file(callbackData.contents.FilePathName, byteOffset, length)
+        seed, symbols = storage_backing.read_file(callbackData.contents.FilePathName, 0, length * 2)
+        output = bytearray(length)
+        decoder = BinaryCoder(length, 8, seed)
+        for symbol in symbols:
+            coefficient, _ = decoder.generate_coefficients()
+            symbol = [symbol >> i & 1 for i in range(8 - 1, -1, -1)]
+            decoder.consume_packet(coefficient, symbol)
+        for i in range(length):
+            if decoder.is_symbol_decoded(i):
+                symbol = decoder.get_decoded_symbol(i)
+                output[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
+        contents = bytes(output)
         # TODO: actually use this data
         network_contents = storage_sync.read(callbackData.contents.FilePathName, byteOffset, length)
         writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(callbackData.contents.NamespaceVirtualizationContext, length)

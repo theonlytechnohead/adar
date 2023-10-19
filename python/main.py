@@ -197,10 +197,11 @@ class AdarDataHandler():
         if command == storage_sync.Command.READ:
             """Received a read request, respond with network-coded data"""
             print("UDP", f"received a read request from {peer.friendly_name}")
-            path, start, length = arguments.decode().split(storage_sync.SEP)
-            start = int(start)
-            length = int(length)
-            data = storage_sync.read_local(path, start, length)
+            path, skip, equations = arguments.decode().split(storage_sync.SEP)
+            skip = int(skip)
+            equations = int(equations)
+            seed, symbols = storage_sync.read_local(path, skip, equations)
+            data = bytes(symbols)
         if command == storage_sync.Command.DATA or command == storage_sync.Command.WRITE:
             """Recieved network-coded data, decode and decrypt"""
             path = header[1:].decode()
@@ -233,7 +234,8 @@ class AdarDataHandler():
                 coefficient = int.from_bytes(coefficient, "big")
                 coefficients.append(coefficient)
             # decoding
-            # TODO: update this to be properly efficient
+            # TODO: put symbols into binary coder to support multiple packets per read
+            storage_sync.reads[path].decoder = BinaryCoder(payload_length, 8, seed)
             decoder = BinaryCoder(payload_length, 8, 1)
             for coefficient, byte in zip(coefficients, data):
                 coefficient = [coefficient >> i & 1 for i in range(payload_length - 1, -1, -1)]
@@ -251,7 +253,7 @@ class AdarDataHandler():
             plaintext = cipher.decrypt_and_verify(data, tag)
         match command:
             case storage_sync.Command.READ:
-                storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, start=start, length=length)
+                storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, seed=seed, skip=skip)
             case storage_sync.Command.DATA:
                 """Received data, presumably linked to a read request"""
                 print("UDP", peer.friendly_name, f"data from a read: {path} ({start}->{start+length})", plaintext)
