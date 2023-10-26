@@ -108,24 +108,11 @@ def read_file(path: str, skip: int, equations: int, **kwargs) -> bytes:
 		metadata = load_metadata(path)
 		metadata.update_atime()
 		write_metadata(path, metadata)
-		# TODO: fetch `equations` number of equations for the file data
+		# fetch equations for the file data
 		with open(os.path.join(SYMBOL_DIRECTORY, path), "rb") as file:
 			symbols = file.read()
 		symbols = list(symbols)
 		return metadata.seed, symbols[skip:skip + equations]
-		output = bytearray(metadata.length)
-		decoder = BinaryCoder(metadata.length, 8, metadata.seed)
-		# TODO: send the generated/read equations
-		for symbol in symbols:
-			coefficient, _ = decoder.generate_coefficients()
-			symbol = [symbol >> i & 1 for i in range(8 - 1, -1, -1)]
-			decoder.consume_packet(coefficient, symbol)
-		# TODO: don't bother decoding (we shouldn't store enough to fully decode anyway)
-		for i in range(metadata.length):
-			if decoder.is_symbol_decoded(i):
-				symbol = decoder.get_decoded_symbol(i)
-				output[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
-		return bytes(output)
 
 
 def rename(path: str, new_path: str):
