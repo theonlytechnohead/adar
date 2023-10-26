@@ -58,7 +58,7 @@ def time(path: str, ctime: int, mtime: int, atime: int):
 		setctime(mount_path, from_ns(ctime))
 
 
-def create(path: str, directory: bool, seed: int | None, **kwargs):
+def create(path: str, directory: bool, seed: int = None, **kwargs):
 	if os.name == "posix":
 		if not path.startswith("/"):
 			path = "/" + path
@@ -83,7 +83,7 @@ def create(path: str, directory: bool, seed: int | None, **kwargs):
 			metadata = load_metadata(path)
 			if seed:
 				metadata.seed = seed
-				write_metadata(path, seed)
+				write_metadata(path, metadata)
 			else:
 				return metadata.seed
 
