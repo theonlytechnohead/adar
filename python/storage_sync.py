@@ -309,12 +309,12 @@ def read(path: str, start: int, length: int) -> bytes:
 		return bytes()
 	timeout = 10
 	# TODO: keep requesting until decoded
-	while (reads[str(path)].decoder == None and type(reads[str(path)].data) == bytearray) or not reads[str(path)].decoder.is_fully_decoded():
+	while (reads[str(path)].decoder == None and type(reads[str(path)].data) != bytes):  # or not reads[str(path)].decoder.is_fully_decoded():
 		sleep(0.001)
 		timeout -= 0.001
 		if timeout < 0:
 			return bytes()
-	data = bytes(reads[str(path)].data)
+	data = reads[str(path)].data
 	del reads[str(path)]
 	return data
 
