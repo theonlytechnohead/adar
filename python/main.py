@@ -192,7 +192,7 @@ class AdarDataHandler():
             print("UDP command is invalid", message)
             return
         if peer.we_ready and peer.ready: print("UDP", peer.friendly_name, command)
-        arguments = arguments.strip()
+        arguments = arguments.rstrip()
         # process command
         if command == storage_sync.Command.READ:
             """Received a read request, respond with network-coded data"""
