@@ -172,20 +172,18 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | str, payload = None, **kwargs):
 	"""Send a file, e.g. a write command, with network-coding and transmit over UDP"""
 	seed: int = kwargs["seed"]
-	# TODO: transmit seed + equations
 	payload: bytes
 	# encryption, XChaCha20-Poly1305 https://pycryptodome.readthedocs.io/en/latest/src/cipher/chacha20_poly1305.html
 	cipher = ChaCha20_Poly1305.new(key=peer.shared_key[-32:], nonce=get_random_bytes(24))
 	cipher.update(str(path).encode())
-	ciphertextx, tag = cipher.encrypt_and_digest(payload)
-	payload_length = len(ciphertextx)
+	ciphertext, tag = cipher.encrypt_and_digest(payload)
+	payload_length = len(ciphertext)
 	coefficient_bytes = math.ceil(payload_length / 8)
 	# encoding
 	# TODO: split data into packet sizes
 	# TODO: divide data into n + 1 peer's worth of equations, distribute to n peers
 	encoder = BinaryCoder(payload_length, 8, 1)
-	decoder = BinaryCoder(payload_length, 8, 1)
-	for i, byte in enumerate(ciphertextx):
+	for i, byte in enumerate(ciphertext):
 		coefficient = [0] * payload_length
 		coefficient[i] = 1
 		bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
@@ -193,10 +191,8 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	# fetching encoded data and confirming sufficiently decodes
 	cata = bytearray()
 	data = bytearray()
-	while not decoder.is_fully_decoded():
-		coefficient, packet = encoder.get_new_coded_packet()
-		# TODO: use encoder.get_sys_coded_packet() instead
-		decoder.consume_packet(coefficient, packet)
+	for i in range(payload_length):
+		coefficient, packet = encoder.get_sys_coded_packet(i)
 		coefficient = int("".join(map(str, coefficient)), 2)
 		coefficient = coefficient.to_bytes(coefficient_bytes, "big")
 		packet = int("".join(map(str, packet)), 2)

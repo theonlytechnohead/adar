@@ -250,7 +250,18 @@ class AdarDataHandler():
             cipher = ChaCha20_Poly1305.new(key=peer.shared_key[-32:], nonce=nonce)
             cipher.update(path.encode())
             plaintext = cipher.decrypt_and_verify(data, tag)
-            # TODO: this is the coded symbols still, not actual file data
+            # process the coded symbols still, not actual file data yet
+            generated_coefficients, _ = storage_sync.reads[path].decoder.generate_coefficients()
+            for coefficient, byte in zip(generated_coefficients, plaintext):
+                coefficient = [coefficient >> i & 1 for i in range(payload_length - 1, -1, -1)]
+                bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
+                storage_sync.reads[path].decoder.consume_packet(coefficient, bits)
+            output = bytearray(payload_length)
+            for i in range(payload_length):
+                if storage_sync.reads[path].decoder.is_symbol_decoded(i):
+                    symbol = storage_sync.reads[path].decoder.get_decoded_symbol(i)
+                    output[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
+            plaintext = bytes(output)
         match command:
             case storage_sync.Command.READ:
                 storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, seed=seed, skip=skip)
