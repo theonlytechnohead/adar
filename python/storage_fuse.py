@@ -3,6 +3,9 @@ import errno
 
 from fuse import FUSE, FuseOSError, Operations
 
+from simplenc import BinaryCoder
+from storage_metadata import load_metadata
+
 import storage_backing
 import storage_sync
 
@@ -112,21 +115,34 @@ class Storage(Operations):
         return handle
 
     def create(self, path, mode, fi=None):
-        result = storage_backing.create(path, False, mode=mode)
-        storage_sync.create(path, False)
+        result, seed = storage_backing.create(path, False, mode=mode)
+        storage_sync.create(path, False, seed)
         self.handles[result] = path
         return result
 
     def read(self, path, length, offset, fh):
         file_path = self.handles[fh]
-        result = storage_backing.read_file(file_path, offset, length, handle=fh)
+        metadata = load_metadata(file_path)
+        seed, symbols = storage_backing.read_file(file_path, 0, metadata.length * 2, handle=fh)
+        output = bytearray(metadata.length)
+        decoder = BinaryCoder(metadata.length, 8, seed)
+        for symbol in symbols:
+            coefficient, _ = decoder.generate_coefficients()
+            symbol = [symbol >> i & 1 for i in range(8 - 1, -1, -1)]
+            decoder.consume_packet(coefficient, symbol)
+        for i in range(metadata.length):
+            if decoder.is_symbol_decoded(i):
+                symbol = decoder.get_decoded_symbol(i)
+                output[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
+        contents = bytes(output)
+        # TODO: get data from peers over network
         # data = storage_sync.read(file_path, offset, length)
-        return result
+        return contents[offset:offset + length]
 
     def write(self, path, buf, offset, fh):
         file_path = self.handles[fh]
-        result = storage_backing.write(file_path, offset, len(buf), buf, handle=fh)
-        storage_sync.write(file_path, offset, buf)
+        result, seed = storage_backing.write(file_path, 0, len(buf), buf)
+        storage_sync.write(file_path, seed, buf)
         return result
 
     def truncate(self, path, length, fh=None):
@@ -146,11 +162,10 @@ class Storage(Operations):
 
 def create():
     destroy()
-    if not os.path.exists(ROOT_POINT):
-        os.mkdir(ROOT_POINT)
-    if not os.path.exists(MOUNT_POINT):
-        os.mkdir(MOUNT_POINT)
-    FUSE(Storage(ROOT_POINT), MOUNT_POINT, foreground=True)
+    storage_backing.ensure(METADATA_DIRECTORY)
+    storage_backing.ensure(SYMBOL_DIRECTORY)
+    storage_backing.ensure(MOUNT_POINT)
+    FUSE(Storage(METADATA_DIRECTORY), MOUNT_POINT, foreground=True)
 
 
 def destroy():

@@ -31,17 +31,28 @@ class Metadata:
 
 def load_metadata(path: str) -> Metadata:
 	metadata = Metadata()
-	if os.path.exists(os.path.join(METADATA_DIRECTORY, path)):
-		with open(os.path.join(METADATA_DIRECTORY, path), "r") as file:
-			metadata = jsons.load(json.load(file), Metadata)
-	else:
-		write_metadata(path, metadata)
+	if os.name == "posix":
+		if (os.path.exists(METADATA_DIRECTORY + path)):
+			with open(METADATA_DIRECTORY + path, "r") as file:
+				metadata = jsons.load(json.load(file), Metadata)
+		else:
+			write_metadata(path, metadata)
+	if os.name == "nt":
+		if os.path.exists(os.path.join(METADATA_DIRECTORY, path)):
+			with open(os.path.join(METADATA_DIRECTORY, path), "r") as file:
+				metadata = jsons.load(json.load(file), Metadata)
+		else:
+			write_metadata(path, metadata)
 	return metadata
 
 
 def write_metadata(path: str, data: Metadata):
-	with open(os.path.join(METADATA_DIRECTORY, path), "w") as file:
-		json.dump(jsons.dump(data, Metadata), file, indent=4)
+	if os.name == "posix":
+		with open(METADATA_DIRECTORY + path, "w") as file:
+			json.dump(jsons.dump(data, Metadata), file, indent=4)
+	if os.name == "nt":
+		with open(os.path.join(METADATA_DIRECTORY, path), "w") as file:
+			json.dump(jsons.dump(data, Metadata), file, indent=4)
 
 
 def from_ns(time):

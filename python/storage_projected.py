@@ -259,19 +259,10 @@ instanceId.Data2 = 0xBAAD
 instanceId.Data3 = 0xCAA7
 
 
-def ensure(directory: str):
-    if not os.path.exists(directory):
-        if DEBUG: print(f"{directory} does not exist yet, creating...")
-        os.mkdir(directory)
-    if not os.path.isdir(directory):
-        if DEBUG: print(f"{directory} is not a directory, exiting...")
-        sys.exit(1)
-
-
 def create():
-    ensure(METADATA_DIRECTORY)
-    ensure(SYMBOL_DIRECTORY)
-    ensure(MOUNT_POINT)
+    storage_backing.ensure(METADATA_DIRECTORY)
+    storage_backing.ensure(SYMBOL_DIRECTORY)
+    storage_backing.ensure(MOUNT_POINT)
 
     if ProjectedFS.PrjMarkDirectoryAsPlaceholder(os.path.abspath(MOUNT_POINT), None, None, instanceId) != S_OK:
         if DEBUG:
