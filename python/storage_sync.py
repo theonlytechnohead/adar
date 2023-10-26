@@ -8,6 +8,7 @@ from time import sleep
 
 import storage_backing
 
+from storage_metadata import load_metadata
 from read_coded import ReadCoded
 from simplenc import BinaryCoder
 from enum import Enum, auto
@@ -251,7 +252,8 @@ def explore(path: str):
 			if local_mtime < mtime:
 				# remote version is more recent, we should fetch it
 				if DEBUG: print("fetching more recent remote file:", file)
-				contents = read(file, 0, length)
+				metadata = load_metadata(file)
+				contents = read(file, BinaryCoder(length, 8, metadata.seed), length)
 				write_local(file, 0, length, contents)
 				time_local(file, ctime, mtime, atime)
 	return explorable
