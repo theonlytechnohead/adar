@@ -233,7 +233,6 @@ class AdarDataHandler():
                 coefficient = int.from_bytes(coefficient, "big")
                 coefficients.append(coefficient)
             # decoding
-            # TODO: put symbols into binary coder to support multiple packets per read
             storage_sync.reads[path].decoder = BinaryCoder(payload_length, 8, seed)
             decoder = BinaryCoder(payload_length, 8, 1)
             for coefficient, byte in zip(coefficients, data):

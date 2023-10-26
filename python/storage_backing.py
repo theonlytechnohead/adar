@@ -171,6 +171,7 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 		with open(os.path.join(SYMBOL_DIRECTORY, path), "wb") as file:
 			file.write(symbols)
 		write_metadata(path, metadata)
+		return metadata.seed
 
 
 def remove_path(path: str):

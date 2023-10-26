@@ -110,9 +110,12 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case Command.LIST:
 			output = f"{Command.LIST.value}:{path}\n".encode()
 		case Command.READ:
+			payload: BinaryCoder
 			skip = kwargs["skip"]
 			equations = kwargs["equations"]
 			reads[str(path)] = ReadCoded()
+			reads[str(path)].data = bytearray(payload.num_symbols)
+			reads[str(path)].decoder = payload
 			output = Command.READ.value.to_bytes(1, "big") + f"{path}{SEP}{skip}{SEP}{equations}\n".encode()
 		case Command.STATS:
 			output = f"{Command.STATS.value}:{path}\n".encode()
@@ -295,24 +298,28 @@ def create(path: str, directory: bool):
 		transmit(peer, Command.CREATE, path, "1" if directory else "0")
 
 
-def read(path: str, start: int, length: int) -> bytes:
+def read(path: str, decoder: BinaryCoder, length: int) -> bytes:
 	path = pton(path)
-	if DEBUG: print(f"reading {path} ({start}->{start+length})")
+	if DEBUG: print(f"reading {path} ({length})")
 	for peer in peer_list:
-		transmit(peer, Command.READ, path, None, skip=0, equations=length)
+		transmit(peer, Command.READ, path, decoder, skip=0, equations=length)
 	# TODO: switch to events rather than polling?
 	if str(path) not in reads:
 		return bytes()
 	timeout = 10
 	# TODO: keep requesting until decoded
-	while (reads[str(path)].decoder == None and type(reads[str(path)].data) != bytes):  # or not reads[str(path)].decoder.is_fully_decoded():
+	while not reads[str(path)].decoder.is_fully_decoded():
 		sleep(0.001)
 		timeout -= 0.001
 		if timeout < 0:
 			return bytes()
-	data = reads[str(path)].data
-	del reads[str(path)]
-	return data
+	for i in range(length):
+		if reads[str(path)].decoder.is_symbol_decoded(i):
+			symbol = reads[str(path)].decoder.get_decoded_symbol(i)
+			reads[str(path)].data[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
+	contents = bytes(reads[str(path)].data)
+	# del reads[str(path)]
+	return contents
 
 
 def rename(path: str, new_path: str):
@@ -323,13 +330,13 @@ def rename(path: str, new_path: str):
 		transmit(peer, Command.RENAME, path, new_path)
 
 
-def write(path: str, start: int, data: bytes):
+def write(path: str, seed: int, data: bytes):
 	path = pton(path)
 	data = data.replace("\r\n".encode(), "\n".encode())
 	length = len(data)
-	if DEBUG: print(f"writing  {path} ({start}->{start+length}): {data}")
+	if DEBUG: print(f"writing  {path} ({length}): {data}")
 	for peer in peer_list:
-		transmit_data(peer, Command.WRITE, path, data, start=start, length=length)
+		transmit_data(peer, Command.WRITE, path, data, seed=seed, skip=0)
 
 
 def remove(path: str):

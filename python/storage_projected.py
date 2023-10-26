@@ -150,6 +150,7 @@ def get_file_data(callbackData, byteOffset, length):
         fileInfo = get_filesize(callbackData.contents.FilePathName, fileInfo)
         if length > fileInfo.FileSize:
             return E_INVALIDARG
+        # read local symbols
         seed, symbols = storage_backing.read_file(callbackData.contents.FilePathName, 0, length * 2)
         output = bytearray(length)
         decoder = BinaryCoder(length, 8, seed)
@@ -162,8 +163,9 @@ def get_file_data(callbackData, byteOffset, length):
                 symbol = decoder.get_decoded_symbol(i)
                 output[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
         contents = bytes(output)
+        # read network symbols
         # TODO: actually use this data
-        network_contents = storage_sync.read(callbackData.contents.FilePathName, byteOffset, length)
+        network_contents = storage_sync.read(callbackData.contents.FilePathName, decoder, length)
         writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(callbackData.contents.NamespaceVirtualizationContext, length)
         if not writeBuffer:
             return E_OUTOFMEMORY
@@ -220,8 +222,8 @@ def notified(callbackData, isDirectory, notification, destinationFileName, opera
             size = os.stat(mount_path).st_size
             with open(mount_path, "rb") as file:
                 data = file.read()
-                storage_backing.write(callbackData.contents.FilePathName, 0, size, data, real_path=mount_path)
-                storage_sync.write(callbackData.contents.FilePathName, 0, data)
+                seed = storage_backing.write(callbackData.contents.FilePathName, 0, size, data, real_path=mount_path)
+                storage_sync.write(callbackData.contents.FilePathName, seed, data)
         case ProjectedFS.PRJ_NOTIFICATION_FILE_HANDLE_CLOSED_FILE_DELETED:
             if DEBUG:
                 print(f"deleted: {callbackData.contents.FilePathName}")
