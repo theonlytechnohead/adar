@@ -236,11 +236,11 @@ def explore(path: str):
 			if os.name == "nt":
 				file = os.path.join(path, file)
 			if DEBUG: print("creating local file:", file)
-			create_local(file, False)
+			seed = create_local(file, False)
 			if DEBUG: print("requesting remote file:", file)
 			length, ctime, mtime, atime = stats(file)
 			if DEBUG: print(file, "size is", length, "bytes")
-			contents = read(file, 0, length)
+			contents = read(file, BinaryCoder(length, 8, seed), length)
 			write_local(file, 0, length, contents)
 			time_local(file, ctime, mtime, atime)
 		else:
@@ -368,11 +368,11 @@ def time_local(path: str, ctime: int, mtime: int, atime: int):
 	return storage_backing.time(path, ctime, mtime, atime)
 
 
-def create_local(path: str, directory: bool, seed: int):
+def create_local(path: str, directory: bool, seed: int = None):
 	if os.name == "nt":
 		path = ntop(path, False)
 	if DEBUG: print(f"creating local {path} ({'folder' if directory else 'file'})")
-	storage_backing.create(path, directory, seed)
+	return storage_backing.create(path, directory, seed)
 
 
 def read_local(path: str, skip: int, equations: int) -> bytes:
