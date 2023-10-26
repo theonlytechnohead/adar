@@ -197,7 +197,8 @@ class AdarDataHandler():
         if command == storage_sync.Command.READ:
             """Received a read request, respond with network-coded data"""
             print("UDP", f"received a read request from {peer.friendly_name}")
-            path, skip, equations = arguments.decode().split(storage_sync.SEP)
+            path = header[1:].decode()
+            skip, equations = arguments.decode().split(storage_sync.SEP)
             skip = int(skip)
             equations = int(equations)
             seed, symbols = storage_sync.read_local(path, skip, equations)
@@ -249,6 +250,7 @@ class AdarDataHandler():
             cipher = ChaCha20_Poly1305.new(key=peer.shared_key[-32:], nonce=nonce)
             cipher.update(path.encode())
             plaintext = cipher.decrypt_and_verify(data, tag)
+            # TODO: this is the coded symbols still, not actual file data
         match command:
             case storage_sync.Command.READ:
                 storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, seed=seed, skip=skip)

@@ -2,5 +2,5 @@ from simplenc import BinaryCoder
 
 
 class ReadCoded:
-	data: bytes | bytearray
+	data: bytes | bytearray = None
 	decoder: BinaryCoder = None
