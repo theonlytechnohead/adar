@@ -234,7 +234,8 @@ class AdarDataHandler():
                 coefficients.append(coefficient)
             # decoding
             if command == storage_sync.Command.DATA:
-                storage_sync.reads[path].decoder = BinaryCoder(payload_length, 8, seed)
+                if storage_sync.reads[path].decoder == None:
+                    storage_sync.reads[path].decoder = BinaryCoder(payload_length, 8, seed)
             decoder = BinaryCoder(payload_length, 8, 1)
             for coefficient, byte in zip(coefficients, data):
                 coefficient = [coefficient >> i & 1 for i in range(payload_length - 1, -1, -1)]
@@ -252,9 +253,8 @@ class AdarDataHandler():
             plaintext = cipher.decrypt_and_verify(data, tag)
             if command == storage_sync.Command.DATA:
                 # process the coded symbols still, not actual file data yet
-                generated_coefficients, _ = storage_sync.reads[path].decoder.generate_coefficients()
-                for coefficient, byte in zip(generated_coefficients, plaintext):
-                    coefficient = [coefficient >> i & 1 for i in range(payload_length - 1, -1, -1)]
+                for byte in plaintext:
+                    coefficient, _ = storage_sync.reads[path].decoder.generate_coefficients()
                     bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
                     storage_sync.reads[path].decoder.consume_packet(coefficient, bits)
                 output = bytearray(payload_length)
