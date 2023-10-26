@@ -80,7 +80,8 @@ def create(path: str, directory: bool, **kwargs):
 			os.mkdir(os.path.join(METADATA_DIRECTORY, path))
 			os.mkdir(os.path.join(SYMBOL_DIRECTORY, path))
 		else:
-			load_metadata(path)
+			metadata = load_metadata(path)
+			return metadata.seed
 
 
 

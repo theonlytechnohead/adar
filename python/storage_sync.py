@@ -104,7 +104,8 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case command.DISCONNECT:
 			output = f"{Command.DISCONNECT.value}:\n".encode()
 		case Command.CREATE:
-			output = f"{Command.CREATE.value}:{path}{SEP}{payload}\n".encode()
+			seed = kwargs["seed"]
+			output = f"{Command.CREATE.value}:{path}{SEP}{payload}{SEP}{seed}\n".encode()
 		case Command.RENAME:
 			output = f"{Command.RENAME.value}:{path}{SEP}{payload}\n".encode()
 		case Command.LIST:
@@ -291,11 +292,11 @@ def stats(path: str):
 		return transmit(peer, Command.STATS, path).join()
 
 
-def create(path: str, directory: bool):
+def create(path: str, directory: bool, seed: int):
 	path = pton(path)
 	if DEBUG: print(f"creating {path} ({'folder' if directory else 'file'})")
 	for peer in peer_list:
-		transmit(peer, Command.CREATE, path, "1" if directory else "0")
+		transmit(peer, Command.CREATE, path, "1" if directory else "0", seed=seed)
 
 
 def read(path: str, decoder: BinaryCoder, length: int) -> bytes:
@@ -367,11 +368,11 @@ def time_local(path: str, ctime: int, mtime: int, atime: int):
 	return storage_backing.time(path, ctime, mtime, atime)
 
 
-def create_local(path: str, directory: bool):
+def create_local(path: str, directory: bool, seed: int):
 	if os.name == "nt":
 		path = ntop(path, False)
 	if DEBUG: print(f"creating local {path} ({'folder' if directory else 'file'})")
-	storage_backing.create(path, directory)
+	storage_backing.create(path, directory, seed)
 
 
 def read_local(path: str, skip: int, equations: int) -> bytes:
