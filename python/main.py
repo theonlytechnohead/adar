@@ -233,7 +233,8 @@ class AdarDataHandler():
                 coefficient = int.from_bytes(coefficient, "big")
                 coefficients.append(coefficient)
             # decoding
-            storage_sync.reads[path].decoder = BinaryCoder(payload_length, 8, seed)
+            if command == storage_sync.Command.DATA:
+                storage_sync.reads[path].decoder = BinaryCoder(payload_length, 8, seed)
             decoder = BinaryCoder(payload_length, 8, 1)
             for coefficient, byte in zip(coefficients, data):
                 coefficient = [coefficient >> i & 1 for i in range(payload_length - 1, -1, -1)]
@@ -249,18 +250,19 @@ class AdarDataHandler():
             cipher = ChaCha20_Poly1305.new(key=peer.shared_key[-32:], nonce=nonce)
             cipher.update(path.encode())
             plaintext = cipher.decrypt_and_verify(data, tag)
-            # process the coded symbols still, not actual file data yet
-            generated_coefficients, _ = storage_sync.reads[path].decoder.generate_coefficients()
-            for coefficient, byte in zip(generated_coefficients, plaintext):
-                coefficient = [coefficient >> i & 1 for i in range(payload_length - 1, -1, -1)]
-                bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
-                storage_sync.reads[path].decoder.consume_packet(coefficient, bits)
-            output = bytearray(payload_length)
-            for i in range(payload_length):
-                if storage_sync.reads[path].decoder.is_symbol_decoded(i):
-                    symbol = storage_sync.reads[path].decoder.get_decoded_symbol(i)
-                    output[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
-            plaintext = bytes(output)
+            if command == storage_sync.Command.DATA:
+                # process the coded symbols still, not actual file data yet
+                generated_coefficients, _ = storage_sync.reads[path].decoder.generate_coefficients()
+                for coefficient, byte in zip(generated_coefficients, plaintext):
+                    coefficient = [coefficient >> i & 1 for i in range(payload_length - 1, -1, -1)]
+                    bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
+                    storage_sync.reads[path].decoder.consume_packet(coefficient, bits)
+                output = bytearray(payload_length)
+                for i in range(payload_length):
+                    if storage_sync.reads[path].decoder.is_symbol_decoded(i):
+                        symbol = storage_sync.reads[path].decoder.get_decoded_symbol(i)
+                        output[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
+                plaintext = bytes(output)
         match command:
             case storage_sync.Command.READ:
                 storage_sync.transmit_data(peer, storage_sync.Command.DATA, path, data, seed=seed, skip=skip)
