@@ -226,13 +226,14 @@ class AdarDataHandler():
                 if storage_sync.reads[path].decoder == None:
                     storage_sync.reads[path].decoder = BinaryCoder(payload_length, 8, seed)
             # TODO: figure out how to communicate the total number of symbols
-            decoder = BinaryCoder(1, payload_length, 1)
+            symbols = 1
+            # TODO: figure how to handle multiple packets / symbols
+            decoder = BinaryCoder(symbols, payload_length, 1)
             coefficient = [coefficient >> i & 1 for i in range(16 - 1, -1, -1)]
             bits = []
             for byte in data:
                 bits.extend([byte >> i & 1 for i in range(8 - 1, -1, -1)])
-            # TODO: figure how to handle multiple packets / symbols
-            coefficient = coefficient[-1:]
+            coefficient = coefficient[-symbols:]
             decoder.consume_packet(coefficient, bits)
             # reassembly
             data = []
