@@ -16,6 +16,7 @@ class BinaryCoder(object):
         self.num_bit_packet = packet_size
         self.random = random.Random()
         self.random.seed(rng_seed)
+        self.seed = rng_seed
         self.reset()
 
     def reset(self):
