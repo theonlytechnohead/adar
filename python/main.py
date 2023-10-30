@@ -223,8 +223,8 @@ class AdarDataHandler():
             i += 16
             # decoding
             if command == storage_sync.Command.DATA:
-                if storage_sync.reads[path].decoder == None:
-                    storage_sync.reads[path].decoder = BinaryCoder(payload_length, 8, seed)
+                if storage_sync.reads[path].decoder == None or storage_sync.reads[path].decoder.seed != seed:
+                    storage_sync.reads[path].decoder = BinaryCoder(storage_sync.reads[path].decoder.num_symbols, 8, seed)
             # TODO: figure out how to communicate the total number of symbols
             symbols = 1
             # TODO: figure how to handle multiple packets / symbols
