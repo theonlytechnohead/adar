@@ -314,7 +314,8 @@ def read(path: str, decoder: BinaryCoder, length: int) -> bytes:
 	for i in range(reads[str(path)].decoder.num_symbols):
 		if reads[str(path)].decoder.is_symbol_decoded(i):
 			symbol = reads[str(path)].decoder.get_decoded_symbol(i)
-			reads[str(path)].data[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
+			if type(reads[str(path)].data) == bytearray:
+				reads[str(path)].data[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
 	contents = bytes(reads[str(path)].data)
 	# del reads[str(path)]
 	return contents
