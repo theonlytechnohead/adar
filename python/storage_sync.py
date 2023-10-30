@@ -249,7 +249,7 @@ def explore(path: str):
 				if DEBUG: print("fetching more recent remote file:", file)
 				metadata = load_metadata(file)
 				contents = read(file, BinaryCoder(length, 8, metadata.seed), length)
-				write_local(file, 0, length, contents)
+				write_local(file, 0, len(contents), contents)
 				time_local(file, ctime, mtime, atime)
 	return explorable
 
@@ -311,7 +311,7 @@ def read(path: str, decoder: BinaryCoder, length: int) -> bytes:
 		timeout -= 0.001
 		if timeout < 0:
 			return bytes()
-	for i in range(length):
+	for i in range(reads[str(path)].decoder.num_symbols):
 		if reads[str(path)].decoder.is_symbol_decoded(i):
 			symbol = reads[str(path)].decoder.get_decoded_symbol(i)
 			reads[str(path)].data[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
