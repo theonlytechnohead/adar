@@ -196,18 +196,18 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	encoder.consume_packet(coefficient, bits)
 	# fetching encoded data and confirming sufficiently decodes
 	coefficient, packet = encoder.get_sys_coded_packet(0)
+	packet = "".join(map(str, packet))
+	packet = [int(packet[i:i+8], 2) for i in range(0, len(packet), 8)]
 	coefficient = int("".join(map(str, coefficient)), 2)
-	coefficient = coefficient.to_bytes(2, "big")
-	data = bytes(packet)
 	output = command.value.to_bytes(1, "big")
 	output += str(path).encode()
 	output += SEP.encode()
 	output += seed.to_bytes(8, "big")
 	output += payload_length.to_bytes(8, "big")
 	output += cipher.nonce  # 24 bytes
-	output += coefficient
-	output += len(data).to_bytes(2, "big")
-	output += data
+	output += coefficient.to_bytes(2, "big")
+	output += len(bytes(packet)).to_bytes(2, "big")
+	output += bytes(packet)
 	output += tag  # 16 bytes
 	output += "\n".encode()
 	# transmission
