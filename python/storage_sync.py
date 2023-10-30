@@ -1,4 +1,3 @@
-import math
 import os
 import pathlib
 import threading
@@ -8,7 +7,7 @@ from time import sleep
 
 import storage_backing
 
-from storage_metadata import load_metadata
+from storage_metadata import load_metadata, write_metadata
 from read_coded import ReadCoded
 from simplenc import BinaryCoder
 from enum import Enum, auto
@@ -231,12 +230,17 @@ def explore(path: str):
 		if file not in local_files:
 			if os.name == "nt":
 				file = os.path.join(path, file)
+			if os.name == "posix":
+				file = path + "/" + file
 			if DEBUG: print("creating local file:", file)
 			seed = create_local(file, False)
 			if DEBUG: print("requesting remote file:", file)
 			length, ctime, mtime, atime = stats(file)
 			if DEBUG: print(file, "size is", length, "bytes")
-			contents = read(file, BinaryCoder(length, 8, seed), length)
+			contents, seed = read(file, BinaryCoder(length, 8, seed), length * 2)
+			metadata = load_metadata(file)
+			metadata.seed = seed
+			write_metadata(file, metadata)
 			write_local(file, 0, length, contents)
 			time_local(file, ctime, mtime, atime)
 		else:
@@ -248,7 +252,7 @@ def explore(path: str):
 				# remote version is more recent, we should fetch it
 				if DEBUG: print("fetching more recent remote file:", file)
 				metadata = load_metadata(file)
-				contents = read(file, BinaryCoder(length, 8, metadata.seed), length)
+				contents, seed = read(file, BinaryCoder(length, 8, metadata.seed), length * 2)
 				write_local(file, 0, len(contents), contents)
 				time_local(file, ctime, mtime, atime)
 	return explorable
@@ -310,7 +314,7 @@ def read(path: str, decoder: BinaryCoder, length: int) -> bytes:
 		sleep(0.001)
 		timeout -= 0.001
 		if timeout < 0:
-			return bytes()
+			return bytes(), reads[str(path)].decoder.seed
 	for i in range(reads[str(path)].decoder.num_symbols):
 		if reads[str(path)].decoder.is_symbol_decoded(i):
 			symbol = reads[str(path)].decoder.get_decoded_symbol(i)
@@ -318,7 +322,7 @@ def read(path: str, decoder: BinaryCoder, length: int) -> bytes:
 				reads[str(path)].data[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")
 	contents = bytes(reads[str(path)].data)
 	# del reads[str(path)]
-	return contents
+	return contents, reads[str(path)].decoder.seed
 
 
 def rename(path: str, new_path: str):
@@ -370,8 +374,10 @@ def create_local(path: str, directory: bool, seed: int = None):
 	if os.name == "nt":
 		path = ntop(path, False)
 	if DEBUG: print(f"creating local {path} ({'folder' if directory else 'file'})")
-	return storage_backing.create(path, directory, seed)
-
+	if os.name == "posix":
+		return storage_backing.create(path, directory, seed)[1]
+	if os.name == "nt":
+		return storage_backing.create(path, directory, seed)
 
 def read_local(path: str, skip: int, equations: int) -> bytes:
 	if os.name == "nt":

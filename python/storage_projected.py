@@ -165,7 +165,7 @@ def get_file_data(callbackData, byteOffset, length):
         contents = bytes(output)
         # read network symbols
         # TODO: actually use this data
-        network_contents = storage_sync.read(callbackData.contents.FilePathName, decoder, length)
+        network_contents, network_seed = storage_sync.read(callbackData.contents.FilePathName, decoder, length)
         writeBuffer = ProjectedFS.PrjAllocateAlignedBuffer(callbackData.contents.NamespaceVirtualizationContext, length)
         if not writeBuffer:
             return E_OUTOFMEMORY

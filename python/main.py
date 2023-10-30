@@ -253,8 +253,8 @@ class AdarDataHandler():
                     coefficient, _ = storage_sync.reads[path].decoder.generate_coefficients()
                     bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
                     storage_sync.reads[path].decoder.consume_packet(coefficient, bits)
-                output = bytearray(payload_length)
-                for i in range(payload_length):
+                output = bytearray(storage_sync.reads[path].decoder.num_symbols)
+                for i in range(storage_sync.reads[path].decoder.num_symbols):
                     if storage_sync.reads[path].decoder.is_symbol_decoded(i):
                         symbol = storage_sync.reads[path].decoder.get_decoded_symbol(i)
                         output[i:i+1] = int("".join(map(str, symbol)), 2).to_bytes(1, "big")

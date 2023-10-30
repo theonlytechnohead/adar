@@ -32,6 +32,8 @@ class Metadata:
 def load_metadata(path: str) -> Metadata:
 	metadata = Metadata()
 	if os.name == "posix":
+		if not path.startswith("/"):
+			path = "/" + path
 		if (os.path.exists(METADATA_DIRECTORY + path)):
 			with open(METADATA_DIRECTORY + path, "r") as file:
 				metadata = jsons.load(json.load(file), Metadata)
