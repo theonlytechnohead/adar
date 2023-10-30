@@ -188,11 +188,10 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	# TODO: split data into packet sizes
 	# TODO: divide data into n + 1 peer's worth of equations, distribute to n peers
 	encoder = BinaryCoder(packets, payload_length, 1)
-	for i, byte in enumerate(ciphertext):
-		coefficient = [0] * encoder.num_symbols
-		coefficient[i] = 1
-		bits = [byte >> i & 1 for i in range(encoder.num_bit_packet - 1, -1, -1)]
-		encoder.consume_packet(coefficient, bits)
+	coefficient = [0] * encoder.num_symbols
+	coefficient[0] = 1
+	bits = [payload >> i & 1 for i in range(encoder.num_bit_packet - 1, -1, -1)]
+	encoder.consume_packet(coefficient, bits)
 	# fetching encoded data and confirming sufficiently decodes
 	coefficient, packet = encoder.get_sys_coded_packet(0)
 	coefficient = int("".join(map(str, coefficient)), 2)
