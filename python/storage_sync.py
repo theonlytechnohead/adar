@@ -178,41 +178,35 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	"""Send a file, e.g. a write command, with network-coding and transmit over UDP"""
 	seed: int = kwargs["seed"]
 	payload: bytes
+	packets = 1
 	# encryption, XChaCha20-Poly1305 https://pycryptodome.readthedocs.io/en/latest/src/cipher/chacha20_poly1305.html
 	cipher = ChaCha20_Poly1305.new(key=peer.shared_key[-32:], nonce=get_random_bytes(24))
 	cipher.update(str(path).encode())
 	ciphertext, tag = cipher.encrypt_and_digest(payload)
 	payload_length = len(ciphertext)
-	coefficient_bytes = math.ceil(payload_length / 8)
 	# encoding
 	# TODO: split data into packet sizes
 	# TODO: divide data into n + 1 peer's worth of equations, distribute to n peers
-	encoder = BinaryCoder(payload_length, 8, 1)
+	encoder = BinaryCoder(packets, payload_length, 1)
 	for i, byte in enumerate(ciphertext):
-		coefficient = [0] * payload_length
+		coefficient = [0] * encoder.num_symbols
 		coefficient[i] = 1
-		bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
+		bits = [byte >> i & 1 for i in range(encoder.num_bit_packet - 1, -1, -1)]
 		encoder.consume_packet(coefficient, bits)
 	# fetching encoded data and confirming sufficiently decodes
-	cata = bytearray()
-	data = bytearray()
-	for i in range(payload_length):
-		coefficient, packet = encoder.get_sys_coded_packet(i)
-		coefficient = int("".join(map(str, coefficient)), 2)
-		coefficient = coefficient.to_bytes(coefficient_bytes, "big")
-		packet = int("".join(map(str, packet)), 2)
-		cata.extend(coefficient)
-		data.extend((packet,))
+	coefficient, packet = encoder.get_sys_coded_packet(0)
+	coefficient = int("".join(map(str, coefficient)), 2)
+	coefficient = coefficient.to_bytes(2, "big")
+	data = bytes(packet)
 	output = command.value.to_bytes(1, "big")
 	output += str(path).encode()
 	output += SEP.encode()
 	output += seed.to_bytes(8, "big")
 	output += payload_length.to_bytes(8, "big")
 	output += cipher.nonce  # 24 bytes
-	output += len(cata).to_bytes(2, "big")
-	output += bytes(cata)
+	output += coefficient
 	output += len(data).to_bytes(2, "big")
-	output += bytes(data)
+	output += data
 	output += tag  # 16 bytes
 	output += "\n".encode()
 	# transmission

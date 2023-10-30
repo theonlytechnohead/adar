@@ -211,36 +211,24 @@ class AdarDataHandler():
             i += 8
             payload_length = int.from_bytes(arguments[i:i+8], "big")
             i += 8
-            coefficient_bytes = max(math.ceil(payload_length / 8), 1)
             nonce = arguments[i:i+24]
             i += 24
-            cata_length = int.from_bytes(arguments[i:i+2], "big")
+            coefficient = int.from_bytes(arguments[i:i+2], "big")
             i += 2
-            cata = arguments[i:i+cata_length]
-            i += cata_length
             data_length = int.from_bytes(arguments[i:i+2], "big")
             i += 2
             data = arguments[i:i+data_length]
             i += data_length
             tag = arguments[i:i+16]
             i += 16
-            coefficients = []
-            # grab `coefficient_bytes` number of bytes at a time and use int.from_bytes w/ "big" endian
-            for i in range(0, len(cata), coefficient_bytes):
-                coefficient = bytearray(coefficient_bytes)
-                for n in range(coefficient_bytes):
-                    coefficient[n] = cata[i + n]
-                coefficient = int.from_bytes(coefficient, "big")
-                coefficients.append(coefficient)
             # decoding
             if command == storage_sync.Command.DATA:
                 if storage_sync.reads[path].decoder == None:
                     storage_sync.reads[path].decoder = BinaryCoder(payload_length, 8, seed)
-            decoder = BinaryCoder(payload_length, 8, 1)
-            for coefficient, byte in zip(coefficients, data):
-                coefficient = [coefficient >> i & 1 for i in range(payload_length - 1, -1, -1)]
-                bits = [byte >> i & 1 for i in range(8 - 1, -1, -1)]
-                decoder.consume_packet(coefficient, bits)
+            decoder = BinaryCoder(1, payload_length, 1)
+            coefficient = [coefficient >> i & 1 for i in range(16 - 1, -1, -1)]
+            bits = [data >> i & 1 for i in range(payload_length - 1, -1, -1)]
+            decoder.consume_packet(coefficient, bits)
             # reassembly
             data = bytearray()
             for packet in decoder.packet_vector:
