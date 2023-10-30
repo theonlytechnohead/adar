@@ -35,6 +35,8 @@ def ls(path: str):
 
 def stats(path: str):
 	if os.name == "posix":
+		if not path.startswith("/"):
+			path = "/" + path
 		metadata = load_metadata(path)
 		return metadata.length, metadata.ctime_ns, metadata.mtime_ns, metadata.atime_ns
 	if os.name == "nt":
