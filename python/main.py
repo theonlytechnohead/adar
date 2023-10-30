@@ -225,15 +225,22 @@ class AdarDataHandler():
             if command == storage_sync.Command.DATA:
                 if storage_sync.reads[path].decoder == None:
                     storage_sync.reads[path].decoder = BinaryCoder(payload_length, 8, seed)
+            # TODO: figure out how to communicate the total number of symbols
             decoder = BinaryCoder(1, payload_length, 1)
             coefficient = [coefficient >> i & 1 for i in range(16 - 1, -1, -1)]
-            bits = [data >> i & 1 for i in range(payload_length - 1, -1, -1)]
+            bits = []
+            for byte in data:
+                bits.extend([byte >> i & 1 for i in range(8 - 1, -1, -1)])
+            # TODO: figure how to handle multiple packets / symbols
+            coefficient = coefficient[-1:]
             decoder.consume_packet(coefficient, bits)
             # reassembly
-            data = bytearray()
-            for packet in decoder.packet_vector:
-                packet = int("".join(map(str, packet)), 2)
-                data.extend((packet,))
+            data = []
+            for symbol in range(decoder.num_symbols):
+                if decoder.is_symbol_decoded(symbol):
+                    bits = decoder.get_decoded_symbol(symbol)
+                    bits = "".join(map(str, bits))
+                    data.extend([int(bits[i:i+8], 2) for i in range(0, len(bits), 8)])
             data = bytes(data)
             # decryption, XChaCha20-Poly1305
             cipher = ChaCha20_Poly1305.new(key=peer.shared_key[-32:], nonce=nonce)
