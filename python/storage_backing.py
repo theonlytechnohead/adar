@@ -61,9 +61,9 @@ def time(path: str, ctime: int, mtime: int, atime: int):
 		metadata.mtime_ns = mtime
 		metadata.atime_ns = atime
 		write_metadata(path, metadata)
-		mount_path = os.path.join(MOUNT_POINT, path)
-		os.utime(mount_path, times=None, ns=(atime, mtime))
-		setctime(mount_path, from_ns(ctime))
+		# mount_path = os.path.join(MOUNT_POINT, path)
+		# os.utime(mount_path, times=None, ns=(atime, mtime))
+		# setctime(mount_path, from_ns(ctime))
 
 
 def create(path: str, directory: bool, seed: int = None, **kwargs):
