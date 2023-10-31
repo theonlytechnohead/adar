@@ -122,7 +122,11 @@ class AdarHandler(socketserver.StreamRequestHandler):
                         self.data = f"{size}{storage_sync.SEP}{ctime}{storage_sync.SEP}{mtime}{storage_sync.SEP}{atime}\n".encode()
                     case storage_sync.Command.CREATE:
                         path, directory, seed = arguments.split(storage_sync.SEP)
-                        storage_sync.create_local(path, bool(int(directory)), int(seed))
+                        try:
+                            seed = int(seed)
+                        except ValueError:
+                            seed = None
+                        storage_sync.create_local(path, bool(int(directory)), seed)
                         self.data = "".encode()
                     case storage_sync.Command.RENAME:
                         path, new_path = arguments.split(storage_sync.SEP)
