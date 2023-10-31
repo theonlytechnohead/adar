@@ -1,5 +1,4 @@
 import os
-import random
 import shutil
 from win32_setctime import setctime
 
@@ -9,11 +8,11 @@ from constants import *
 from storage_metadata import *
 
 def ensure(directory: str):
-    if not os.path.exists(directory):
-        os.mkdir(directory)
-    if not os.path.isdir(directory):
-        print(f"{directory} is not a directory, exiting...")
-        sys.exit(1)
+	if not os.path.exists(directory):
+		os.mkdir(directory)
+	if not os.path.isdir(directory):
+		print(f"{directory} is not a directory, exiting...")
+		sys.exit(1)
 
 
 def ls(path: str):

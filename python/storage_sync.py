@@ -51,14 +51,14 @@ def ntop(path: str, mount = True) -> str:
 
 
 def identify_peer(address: str, timeout: int = 10):
-    if address.startswith("::ffff:"):
-        address = address.removeprefix("::ffff:")
-    while 0 < timeout:
-        for peer in peer_list:
-            if address in peer.addresses:
-                return peer
-        sleep(1)
-        timeout -= 1
+	if address.startswith("::ffff:"):
+		address = address.removeprefix("::ffff:")
+	while 0 < timeout:
+		for peer in peer_list:
+			if address in peer.addresses:
+				return peer
+		sleep(1)
+		timeout -= 1
 
 
 # How to get the return value from a thread? https://stackoverflow.com/a/6894023

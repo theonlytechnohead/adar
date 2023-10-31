@@ -7,6 +7,5 @@ SERVICE = "_adar._tcp.local."  # suffix for DNS-SD service
 SUPPORTED_VERSIONS = [1]  # versions supported by this implementation / instance
 
 MOUNT_POINT = "mount"  # for presenting to the OS / user
-ROOT_POINT = ".root"  # temporary
 SYMBOL_DIRECTORY = ".symbols"  # holds symbols
 METADATA_DIRECTORY = ".metadata"  # holds file metadata
