@@ -244,6 +244,10 @@ def explore(path: str):
 			write_local(file, 0, length, contents)
 			time_local(file, ctime, mtime, atime)
 		else:
+			if os.name == "nt":
+				file = os.path.join(path, file)
+			if os.name == "posix":
+				file = path + "/" + file
 			if DEBUG: print(file, "is in both, comparing times")
 			length, ctime, mtime, atime = stats(file)
 			_, _, local_mtime, _ = stats_local(file)
