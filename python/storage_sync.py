@@ -253,6 +253,8 @@ def explore(path: str):
 				if DEBUG: print("fetching more recent remote file:", file)
 				metadata = load_metadata(file)
 				contents, seed = read(file, BinaryCoder(length, 8, metadata.seed), length * 2)
+				metadata.seed = seed
+				write_metadata(file, metadata)
 				write_local(file, 0, len(contents), contents)
 				time_local(file, ctime, mtime, atime)
 	return explorable
@@ -307,7 +309,7 @@ def read(path: str, decoder: BinaryCoder, length: int) -> bytes:
 		transmit(peer, Command.READ, path, decoder, skip=0, equations=length)
 	# TODO: switch to events rather than polling?
 	if str(path) not in reads:
-		return bytes()
+		return bytes(), None
 	timeout = 10
 	# TODO: keep requesting until decoded
 	while not reads[str(path)].decoder.is_fully_decoded():
