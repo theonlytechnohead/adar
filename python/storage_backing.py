@@ -1,6 +1,5 @@
 import os
 import shutil
-from win32_setctime import setctime
 
 from simplenc import BinaryCoder
 
@@ -172,15 +171,13 @@ def write(path: str, start: int, length: int, data: bytes, **kwargs):
 		write_metadata(path, metadata)
 		encoder = BinaryCoder(length, 8, metadata.seed)
 		for i in range(length):
-			coefficients = [0] * length
-			coefficients[i] = 1
-			byte = data[i]
-			encoder.consume_packet(coefficients, [byte >> i & 1 for i in range(8 - 1, -1, -1)])
-		symbols = []
-		for _ in range(length * 2):
+			coefficients = [1 if j == i else 0 for j in range(length)]
+			encoder.consume_packet(coefficients, [1 if digit=='1' else 0 for digit in format(data[i], "08b")])
+		symbols = [0] * (length * 2)
+		for i in range(length * 2):
 			symbol = encoder.get_generated_coded_packet()
 			symbol = int("".join(map(str, symbol)), 2)
-			symbols.append(symbol)
+			symbols[i] = symbol
 		symbols = bytes(symbols)
 		with open(os.path.join(SYMBOL_DIRECTORY, path), "wb") as file:
 			file.write(symbols)

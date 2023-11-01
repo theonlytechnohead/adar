@@ -128,8 +128,7 @@ class Storage(Operations):
 		decoder = BinaryCoder(metadata.length, 8, seed)
 		for symbol in symbols:
 			coefficient, _ = decoder.generate_coefficients()
-			symbol = [symbol >> i & 1 for i in range(8 - 1, -1, -1)]
-			decoder.consume_packet(coefficient, symbol)
+			decoder.consume_packet(coefficient, [1 if digit == "1" else 0 for digit in format(symbol, "08b")])
 		for i in range(metadata.length):
 			if decoder.is_symbol_decoded(i):
 				symbol = decoder.get_decoded_symbol(i)
