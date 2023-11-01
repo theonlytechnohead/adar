@@ -210,14 +210,16 @@ class AdarDataHandler():
 			"""Recieved network-coded data, decode and decrypt"""
 			path = header[1:].decode()
 			i = 0
-			seed = int.from_bytes(arguments[i:i+8], "big")
-			i += 8
+			symbols = int.from_bytes(arguments[i:i+4], "big")
+			i += 4
 			payload_length = int.from_bytes(arguments[i:i+8], "big")
+			i += 8
+			seed = int.from_bytes(arguments[i:i+8], "big")
 			i += 8
 			nonce = arguments[i:i+24]
 			i += 24
-			coefficient = int.from_bytes(arguments[i:i+2], "big")
-			i += 2
+			coefficient = int.from_bytes(arguments[i:i+4], "big")
+			i += 4
 			data_length = int.from_bytes(arguments[i:i+2], "big")
 			i += 2
 			data = arguments[i:i+data_length]
@@ -228,11 +230,9 @@ class AdarDataHandler():
 			if command == storage_sync.Command.DATA:
 				if storage_sync.reads[path].decoder == None or storage_sync.reads[path].decoder.seed != seed:
 					storage_sync.reads[path].decoder = BinaryCoder(storage_sync.reads[path].decoder.num_symbols, 8, seed)
-			# TODO: figure out how to communicate the total number of symbols
-			symbols = 1
 			# TODO: figure how to handle multiple packets / symbols
 			decoder = BinaryCoder(symbols, payload_length, 1)
-			coefficient = [coefficient >> i & 1 for i in range(16 - 1, -1, -1)]
+			coefficient = [coefficient >> i & 1 for i in range(32 - 1, -1, -1)]
 			bits = []
 			for byte in data:
 				bits.extend([byte >> i & 1 for i in range(8 - 1, -1, -1)])

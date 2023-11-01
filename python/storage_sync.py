@@ -177,6 +177,7 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	"""Send a file, e.g. a write command, with network-coding and transmit over UDP"""
 	seed: int = kwargs["seed"]
 	payload: bytes
+	# TODO: split data into packet sizes
 	packets = 1
 	# encryption, XChaCha20-Poly1305 https://pycryptodome.readthedocs.io/en/latest/src/cipher/chacha20_poly1305.html
 	cipher = ChaCha20_Poly1305.new(key=peer.shared_key[-32:], nonce=get_random_bytes(24))
@@ -184,7 +185,6 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	ciphertext, tag = cipher.encrypt_and_digest(payload)
 	payload_length = len(ciphertext)
 	# encoding
-	# TODO: split data into packet sizes
 	# TODO: divide data into n + 1 peer's worth of equations, distribute to n peers
 	encoder = BinaryCoder(packets, payload_length * 8, 1)
 	coefficient = [0] * encoder.num_symbols
@@ -201,10 +201,11 @@ def transmit_data(peer: Peer, command: Command, path: pathlib.PurePosixPath | st
 	output = command.value.to_bytes(1, "big")
 	output += str(path).encode()
 	output += SEP.encode()
-	output += seed.to_bytes(8, "big")
+	output += packets.to_bytes(4, "big")
 	output += payload_length.to_bytes(8, "big")
+	output += seed.to_bytes(8, "big")
 	output += cipher.nonce  # 24 bytes
-	output += coefficient.to_bytes(2, "big")
+	output += coefficient.to_bytes(4, "big")
 	output += len(bytes(packet)).to_bytes(2, "big")
 	output += bytes(packet)
 	output += tag  # 16 bytes
