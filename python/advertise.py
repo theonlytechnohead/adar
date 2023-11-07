@@ -108,8 +108,8 @@ def advertise() -> Zeroconf:
 	zeroconf = Zeroconf()
 	properties = {
 		"Description": "Network coding for automated distributed storage systems",
-		"uuid": ID,
-		"versions": storage_sync.SEP.join([str(version) for version in SUPPORTED_VERSIONS])
+		"uuid": ID,  # TODO: use public/private key pair instead
+		"versions": ",".join([str(version) for version in SUPPORTED_VERSIONS])
 	}
 	fqdn = socket.getfqdn()
 	hostname = socket.gethostname()

@@ -21,7 +21,7 @@ def add_peer(info: ServiceInfo) -> Peer:
 		info.parsed_addresses(IPVersion.V4Only),
 		info.parsed_addresses(IPVersion.V6Only),
 		info.parsed_addresses(),
-		[int(version) for version in info.properties[b"versions"].split(storage_sync.SEP.encode())]
+		[int(version) for version in info.properties[b"versions"].split(",".encode())]
 		)
 	peer_list.append(peer)
 	return peer
