@@ -92,9 +92,9 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 	output = "".encode()
 	match command:
 		case command.PAIR:
-			output = f"{Command.PAIR.value}:{SEP.join([str(version) for version in SUPPORTED_VERSIONS])}\n".encode()
+			output = f"{Command.PAIR.value}:{','.join([str(version) for version in SUPPORTED_VERSIONS])}\n".encode()
 		case command.CONNECT:
-			output = f"{Command.CONNECT.value}:{SEP.join([str(version) for version in SUPPORTED_VERSIONS])}\n".encode()
+			output = f"{Command.CONNECT.value}:{','.join([str(version) for version in SUPPORTED_VERSIONS])}\n".encode()
 		case command.KEY:
 			output = f"{Command.KEY.value}:{payload.decode()}\n".encode()
 		case command.SYNC:
