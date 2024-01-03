@@ -46,6 +46,7 @@ class AdarHandler(socketserver.StreamRequestHandler):
 					self.wfile.write(b"\n")
 					continue
 				self.data = str(self.raw_data.strip(), "utf-8")
+				# TODO: decrypt data using private key
 				if peer and peer.we_ready and peer.ready: print("TCP", peer.friendly_name, self.data)
 				command = storage_sync.Command(int(self.data.split(":", 1)[0]))
 				# TODO: test for command first, then determine whether arguments need to be split off?

@@ -26,7 +26,7 @@ def bin_mat_rref(A):
     n = len(B)
     nk = len(B[0])
     # backwards sweep
-    for row in range(n-1,-1,-1):
+    for row in range(n-1, -1, -1):
         # check if the current row contains an identity leading 1
         try:
             leading_one = B[row][:n].index(1)
@@ -34,38 +34,38 @@ def bin_mat_rref(A):
             for to_reduce_row in range(row-1,-1,-1):
                 if B[to_reduce_row][leading_one] == 1:
                     for k in range(to_reduce_row,nk):
-                        B[to_reduce_row][k] = (B[to_reduce_row][k]+B[row][k])%2
+                        B[to_reduce_row][k] = (B[to_reduce_row][k] + B[row][k]) % 2
         except ValueError:
             # tough luck, no symbol entry, moving up
             pass
 
-    symbol_cutoff = int(len(B[0])/2) # The cutoff where symbols end and the transformation starts   
+    symbol_cutoff = int(len(B[0]) / 2) # The cutoff where symbols end and the transformation starts   
     row_sums = [sum(row[0:symbol_cutoff]) for row in B]
     rank = sum([row_sum >= 1 for row_sum in row_sums])
-    decoded_symbols = [row.index(1) for row in B if sum(row[0:symbol_cutoff])==1]
-    is_decoded = [True if x in decoded_symbols else False for x in range(0,n)]
+    decoded_symbols = [row.index(1) for row in B if sum(row[0:symbol_cutoff]) == 1]
+    is_decoded = [True if x in decoded_symbols else False for x in range(0, n)]
     return B, rank, is_decoded
 
 
 def bin_mat_dot(K, L):
-    result = []
+    result = [0] * len(K)
     num_rows = len(K)
     num_cols = len(K[0])
     num_bits = len(L[0])
     
     for row in range(num_rows):
-        if sum(K[row])>1 or K[row][row]==0:
-            row_solution =  [0]*num_bits
+        if sum(K[row]) > 1 or K[row][row] == 0:
+            row_solution = [0] * num_bits
             for k in range(num_cols):
                 if K[row][k]:
                     for j in range(num_bits):
-                        row_solution[j] = (row_solution[j] + K[row][k]*L[k][j])%2
+                        row_solution[j] = (row_solution[j] + K[row][k] * L[k][j]) % 2
         else:
             row_solution = L[row]
-        result.append(row_solution)
+        result[row] = row_solution
     return result
 
 
 def identity(n):
     """Credits to user JLT: https://stackoverflow.com/questions/40269725/trying-to-construct-identity-matrix"""
-    return [[0]*i + [1] + [0]*(n-i-1) for i in range(n)]
+    return [[0] * i + [1] + [0] * (n-i-1) for i in range(n)]

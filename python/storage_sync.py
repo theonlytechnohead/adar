@@ -123,6 +123,7 @@ def transmit(peer: Peer, command: Command, path: pathlib.PurePosixPath = None, p
 		case Command.REMOVE:
 			output = f"{Command.REMOVE.value}:{path}\n".encode()
 	# transmission
+	# TODO: encrypt data using public key
 	if command == Command.READ:
 		"""Send a read request for a file over UDP"""
 		peer.data_connection.sendto(output, peer.data_address)
