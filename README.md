@@ -1,6 +1,6 @@
 # adar
 
-Network coding for automated distributed storage systems
+Network coding for automated distributed storage system: adar
 
 ## What is this?
 
@@ -14,13 +14,11 @@ Please see [SPEC.md](SPEC.md)
 
 ## Requirements
 
-For Windows:
-- [Python 3.10 or later](https://www.python.org/downloads/)
-- [Windows Projected File System](https://learn.microsoft.com/en-us/windows/win32/projfs/projected-file-system)
+[Python 3.10 or later](https://www.python.org/downloads/)
 
-For Unix (GNU+Linux, macOS):
-- [Python 3.10 or later](https://www.python.org/downloads/)
-- [Filsystem in Userspace](https://www.kernel.org/doc/html/next/filesystems/fuse.html) (FUSE) as required by [fusepy](https://github.com/fusepy/fusepy)
+| For Windows | For Unix (GNU+Linux, macOS) |
+| --- | --- |
+| [Windows Projected File System](https://learn.microsoft.com/en-us/windows/win32/projfs/projected-file-system) | [Filsystem in Userspace](https://www.kernel.org/doc/html/next/filesystems/fuse.html) (FUSE) as required by [fusepy](https://github.com/fusepy/fusepy) |
 
 ## Running (from source)
 
@@ -44,13 +42,12 @@ For Unix (GNU+Linux, macOS):
 ~/adar/python $ pip install -r requirements.txt
 ```
 
-#### For Unix systems (GNU+Linux, macOS):
-- ensure that FUSE is working, e.g. with the `libfuse` library
+| For Windows systems | For Unix systems (GNU+Linux, macOS) |
+| --- | --- |
+| enable `Windows Projected File System` in `Turn Windows features on or off`   | ensure that FUSE is working, e.g. with the `libfuse` library |
 
-#### For Windows systems, either:
-- enable `Windows Projected File System` in `Turn Windows features on or off`  
-***OR***  
-- in an elevated Powershell prompt (Run as Administrator)  
+Alternatively for Windows, in an elevated Powershell prompt (Run as Administrator):
+
 ```powershell
 PS > Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
 ```
@@ -65,7 +62,6 @@ PS > Enable-WindowsOptionalFeature -Online -FeatureName Client-ProjFS -NoRestart
 The `mount` directory will present itself for file storage
 
 You can run `adar` on additional computers to pair and connect to them, which will allow the storage to be distributed
-
 
 ## Building (from source)
 
